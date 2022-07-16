@@ -10,6 +10,7 @@ const Fridge = require("../models/Fridge");
 
 const adminAuth = require("../middleware/adminAuth");
 const memberAuth = require("../middleware/memberAuth");
+const auth = require("../middleware/auth");
 
 // registration
 router.put(
@@ -41,7 +42,6 @@ router.put(
       const createdUser = await User.create({
         email: req.body.email,
         hash,
-        joinDate: Date.now(),
       });
       console.log("created user: email: ", createdUser.email, createdUser._id);
       res.status(200).json({ status: 200, message: "successfully added" });
@@ -123,19 +123,36 @@ router.get("/items", async (req, res) => {
 // Create fridge
 router.put(
   "/fridge",
+  auth,
   [check("fridgeName", "fridge name cannot be empty").notEmpty()],
   async (req, res) => {
+    console.log(req.body);
     try {
       const err = validationResult(req);
       console.log(err);
       if (err.errors.length !== 0) {
         return res.status(400).json({ error: 400, message: err.array() });
       }
+      const payload = req.body;
+      payload.admin = req.decoded.id;
 
-      const createdFridge = await Fridge.create({
-        fridgeName: req.body.fridgeName,
-        createDate: Date.now(),
+      const createdFridge = await Fridge.create(payload);
+
+      const userIds = [createdFridge.admin, ...createdFridge.members];
+
+      User.find({ _id: { $in: userIds } }, function (err, users) {
+        if (err) return res.status(400).json(err);
+        for (let user of users) {
+          if (user.fridgeId) {
+            user.fridgeId = [...user.fridgeId, createdFridge._id];
+          } else {
+            user.fridgeId = [createdFridge._id];
+          }
+
+          user.save();
+        }
       });
+
       console.log("created fridge: ", createdFridge.email, createdFridge._id);
       res.status(200).json({ status: 200, message: "successfully added" });
     } catch (error) {
@@ -147,7 +164,7 @@ router.put(
 // Add member to the fridge
 router.patch(
   "/member",
-  [check("email", "user email cannot be empty").notEmpty()],
+  [check("email", "user email cannot be empty").isArray().notEmpty()],
   adminAuth,
   async (req, res) => {
     try {
@@ -156,15 +173,17 @@ router.patch(
         return res.status(400).json({ error: 400, message: err.array() });
       }
 
-      const validUser = await User.findOne({ email: req.body.email });
-      if (!validUser) {
-        return res
-          .status(400)
-          .json({ erorr: 400, message: "user cannot be found" });
-      }
+      for (const inputEmail of req.body.email) {
+        const validUser = await User.findOne({ email: inputEmail });
+        if (!validUser) {
+          return res
+            .status(400)
+            .json({ erorr: 400, message: "user cannot be found" });
+        }
 
-      validUser.fridgeId = req.body.fridgeId || validUser.fridgeId;
-      validUser.save();
+        validUser.fridgeId = [...validUser.fridgeId, req.body.fridgeId];
+        validUser.save();
+      }
 
       console.log("added user: email: ", validUser.email, validUser._id);
       res.status(200).json(validUser);
