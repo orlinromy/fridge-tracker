@@ -16,7 +16,7 @@ const Registration = () => {
       body: JSON.stringify(userInput),
     };
     try {
-      const res = await fetch("http://localhost:5001/users/user", options);
+      const res = await fetch("http://localhost:5001/api/users/user", options);
       const data = await res.json();
       console.log(data);
     } catch {
