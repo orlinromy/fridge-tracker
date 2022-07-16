@@ -16,7 +16,7 @@ const Login = () => {
       body: JSON.stringify(userInput),
     };
     try {
-      const res = await fetch("http://localhost:5001/users/login", options);
+      const res = await fetch("http://localhost:5001/api/users/login", options);
     } catch {
       console.log(error.mesasge);
     }
