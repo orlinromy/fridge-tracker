@@ -8,7 +8,7 @@ const UserSchema = new mongoose.Schema(
   },
 
   { timestamps: true },
-  { collection: "fridgeUsers" }
+  { collection: "users" }
 );
 
 const User = mongoose.model("User", UserSchema);
