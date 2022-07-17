@@ -4,12 +4,14 @@ const bcrypt = require("bcrypt");
 const { check, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
+/// source: https://stackoverflow.com/questions/8233014/how-do-i-search-for-an-object-by-its-objectid-in-the-mongo-console
+var ObjectId = require("mongodb").ObjectId;
 
 const User = require("../models/User");
 const Fridge = require("../models/Fridge");
 
-const adminAuth = require("../middleware/adminAuth");
-const memberAuth = require("../middleware/memberAuth");
+const fridgeAuth = require("../middleware/fridgeAuth");
+// const auth = require("../middleware/auth");
 const auth = require("../middleware/auth");
 
 // registration
@@ -165,7 +167,7 @@ router.put(
 router.patch(
   "/member",
   [check("email", "user email cannot be empty").isArray().notEmpty()],
-  adminAuth,
+  fridgeAuth,
   async (req, res) => {
     try {
       const err = validationResult(req);
@@ -197,7 +199,7 @@ router.patch(
 router.put(
   "/items",
   [check("items", "fields cannot be empty").notEmpty()],
-  memberAuth,
+  auth,
   async (req, res) => {
     try {
       const err = validationResult(req);
@@ -216,34 +218,69 @@ router.put(
   }
 );
 
-// Update items for Admin
-router.patch("/admin-items", adminAuth, async (req, res) => {
+// Update items
+router.patch("/item", fridgeAuth, async (req, res) => {
   try {
-    const itemUpdate = await Fridge.findOne({ fridgeId: req.body.fridgeId });
-    itemUpdate.items = req.body.items || itemUpdate.items;
-    itemUpdate.save();
+    // const itemUpdate = await Fridge.findOne({ fridgeId: req.body.fridgeId });
+    // itemUpdate.items = req.body.items || itemUpdate.items;
+    // itemUpdate.save();
+    const fridgeItems = await Fridge.findOne({ _id: req.body.fridgeId });
+    console.log(req.decoded);
+    let isFound = false;
 
-    res.status(200).json(itemUpdate);
+    if (req.decoded.admin) {
+      for (const item of fridgeItems.items) {
+        const reqItemId = new ObjectId(req.body.itemId);
+
+        if (reqItemId.equals(item._id)) {
+          item.expiry = req.body.expiry || item.expiry;
+          item.qty = req.body.qty || item.qty;
+          isFound = true;
+        }
+      }
+      console.log(fridgeItems);
+      fridgeItems.save();
+    } else {
+      for (const item of fridgeItems.items) {
+        const reqItemId = new ObjectId(req.body.itemId);
+        if (reqItemId.equals(item._id)) {
+          if (item.owner === req.decoded.id) {
+            item.expiry = req.body.expiry || item.expiry;
+            item.qty = req.body.qty || item.qty;
+            isFound = true;
+          } else {
+            return res
+              .status(403)
+              .json({ error: 403, message: "user is not authorized" });
+          }
+        }
+      }
+      console.log(fridgeItems);
+      fridgeItems.save();
+    }
+    isFound
+      ? res.status(200).json(fridgeItems)
+      : res.status(400).json({ error: 400, message: "item not found" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
-// Update items for Members
-router.patch("/member-items", memberAuth, async (req, res) => {
-  try {
-    const itemUpdate = await Fridge.findOne({ fridgeId: req.body.fridgeId });
-    itemUpdate.items = req.body.items || itemUpdate.items;
-    itemUpdate.save();
+// // Update items for Members
+// router.patch("/member-items", auth, async (req, res) => {
+//   try {
+//     const itemUpdate = await Fridge.findOne({ fridgeId: req.body.fridgeId });
+//     itemUpdate.items = req.body.items || itemUpdate.items;
+//     itemUpdate.save();
 
-    res.status(200).json(itemUpdate);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+//     res.status(200).json(itemUpdate);
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// });
 
 // Delete items for Admin
-router.delete("/admin-items", adminAuth, async (req, res) => {
+router.delete("/admin-items", fridgeAuth, async (req, res) => {
   try {
     const deleted = await Fridge.deleteOne({ fridgeId: req.body.fridgeId });
     res.status(200).json(deleted);
@@ -253,7 +290,7 @@ router.delete("/admin-items", adminAuth, async (req, res) => {
 });
 
 // Delete items for Members
-router.delete("/admin-items", memberAuth, async (req, res) => {
+router.delete("/admin-items", auth, async (req, res) => {
   try {
     const deleted = await Fridge.deleteOne({ fridgeId: req.body.fridgeId });
     res.status(200).json(deleted);
