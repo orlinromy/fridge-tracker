@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ReactDOM } from "react-dom";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
   const emailRef = useRef();
   const passwordRef = useRef();
+  const [error, setError] = useState();
+  const [tokens, setTokens] = useState({});
 
   const login = async (userInput) => {
     const options = {
@@ -16,9 +17,13 @@ const Login = () => {
       body: JSON.stringify(userInput),
     };
     try {
+      setTokens();
       const res = await fetch("http://localhost:5001/api/users/login", options);
-    } catch {
-      console.log(error.mesasge);
+      const data = await res.json();
+      setTokens(data);
+    } catch (error) {
+      console.log(error.message);
+      setError(error);
     }
   };
 
@@ -42,6 +47,7 @@ const Login = () => {
         <label htmlFor="password">Password:</label>
         <input id="password" ref={passwordRef} type="password"></input>
         <button type="submit">Login</button>
+        <p>{tokens && JSON.stringify(tokens)}</p>
       </form>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const CreateItem = () => {
@@ -9,9 +9,10 @@ const CreateItem = () => {
   const ownerRef = useRef();
   const tagRef = useRef([]);
   const buyDateRef = useRef();
+  const [error, setError] = useState();
   //   const createDateRef = useRef();
 
-  const createItem = async () => {
+  const createItem = async (userInput) => {
     const options = {
       method: "PUT",
       headers: {
@@ -34,14 +35,18 @@ const CreateItem = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const name = nameRef.current.value;
-    const quantity = quantityRef.current.value;
+    const qty = quantityRef.current.value;
     const expiry = expiryRef.current.value;
     const owner = ownerRef.current.value;
-    const tag = tagRef.current.value;
+    const tags = tagRef.current.value;
+    const tag = tags
+      .split(/,(\s)?/)
+      .filter((data) => data !== " " && data != undefined);
     const buyDate = buyDateRef.current.value;
 
-    const userInput = { name, quantity, expiry, owner, tag, buyDate };
-    createItem(userInput);
+    const userInput = { name, qty, expiry, owner, tag, buyDate };
+    console.log(userInput);
+    // createItem(userInput);
   };
 
   return (
