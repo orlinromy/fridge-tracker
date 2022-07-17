@@ -16,7 +16,7 @@ const auth = require("../middleware/auth");
 
 // registration
 router.put(
-  "/user",
+  "/register",
   [
     check("email", "email cannot be empty").notEmpty(),
     check("email", "invalid email").isEmail(),
@@ -167,28 +167,67 @@ router.put(
 router.patch(
   "/member",
   [check("email", "user email cannot be empty").isArray().notEmpty()],
-  fridgeAuth,
+  // fridgeAuth,
   async (req, res) => {
+    // req.body.email = ['a@n.c', 'b@n.c']
     try {
-      const err = validationResult(req);
-      if (err.errors.length !== 0) {
-        return res.status(400).json({ error: 400, message: err.array() });
-      }
+      //     const err = validationResult(req);
+      //     if (err.errors.length !== 0) {
+      //       return res.status(400).json({ error: 400, message: err.array() });
+      //     }
 
-      for (const inputEmail of req.body.email) {
-        const validUser = await User.findOne({ email: inputEmail });
-        if (!validUser) {
-          return res
-            .status(400)
-            .json({ erorr: 400, message: "user cannot be found" });
+      //     const validUsers = await User.findOne({ email: inputEmail });
+      //     if (!validUsers) {
+      //       return res
+      //         .status(400)
+      //         .json({ erorr: 400, message: "user cannot be found" });
+      //     }
+
+      //     validUsers.fridgeId = [...validUsers.fridgeId, req.body.fridgeId];
+      //     for (let validUser of validUsers) {
+      //       if (member.fridgeId) {
+      //         member.fridgeId = [...member.fridgeId, addMember._id];
+      //       } else {
+      //         member.fridgeId = [addMember._id];
+      //       }
+      //     validUser.save();
+
+      //     const addMember = await Fridge.find(payload);
+
+      //     addMember.members = [...addMember.members, req.body.members];
+      //     for (let member of members) {
+      //       if (member.fridgeId) {
+      //         member.fridgeId = [...member.fridgeId, addMember._id];
+      //       } else {
+      //         member.fridgeId = [addMember._id];
+      //       }
+      //     addMember.save();
+      //   }
+      // );
+      const msg = [];
+      User.find({ email: { $in: req.body.email } }, function (err, users) {
+        console.log(users);
+        if (err) return res.status(400).json(err);
+        for (let user of users) {
+          if (user.fridgeId) {
+            if (user.fridgeId.include(createdFridge._id)) {
+              msg.push(
+                `user ${user._id} is already a member of ${createdFridge._id}`
+              );
+            } else {
+              user.fridgeId = [...user.fridgeId, createdFridge._id];
+            }
+          } else {
+            user.fridgeId = [createdFridge._id];
+          }
+
+          user.save();
         }
+      });
 
-        validUser.fridgeId = [...validUser.fridgeId, req.body.fridgeId];
-        validUser.save();
-      }
-
-      console.log("added user: email: ", validUser.email, validUser._id);
-      res.status(200).json(validUser);
+      console.log("added fridgeId: email: ", validUser.email, validUser._id);
+      console.log("added member: email: ", addMember.email, addMember._id);
+      res.status(200).json(addMember);
     } catch (error) {
       res.status(400).json({ message: error.message });
     }

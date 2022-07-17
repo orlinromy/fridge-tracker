@@ -17,6 +17,7 @@ const FridgeSchema = new mongoose.Schema(
         owner: { type: String, required: true },
         tag: [String],
         buyDate: { type: Date, default: Date.now() },
+        createDate: { type: Date, default: Date.now() },
       },
     ],
   },
