@@ -331,8 +331,8 @@ router.patch("/item", fridgeAuth, async (req, res) => {
   }
 });
 
-// Delete items for Admin
-router.delete("/admin-items", fridgeAuth, async (req, res) => {
+// Delete items
+router.delete("/items", fridgeAuth, async (req, res) => {
   try {
     const deleted = await Fridge.deleteOne({ fridgeId: req.body.fridgeId });
     res.status(200).json(deleted);
@@ -341,11 +341,18 @@ router.delete("/admin-items", fridgeAuth, async (req, res) => {
   }
 });
 
-// Delete items for Members
-router.delete("/admin-items", auth, async (req, res) => {
+// Get all items for a particular fridge
+router.get("/fridge/:fridgeId", auth, async (req, res) => {
   try {
-    const deleted = await Fridge.deleteOne({ fridgeId: req.body.fridgeId });
-    res.status(200).json(deleted);
+    const fridge = await Fridge.findOne({ _id: req.params.fridgeId });
+    if (
+      fridge.admin === req.decoded.id ||
+      fridge.members.includes(req.decoded.id)
+    ) {
+      res.status(200).json(fridge);
+    } else {
+      res.status(403).json({ error: 403, message: "not authorized" });
+    }
   } catch (error) {
     res.status(400).json({ error: 400, message: error.message });
   }
