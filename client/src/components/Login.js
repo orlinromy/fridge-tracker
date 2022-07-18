@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -7,6 +8,7 @@ const Login = () => {
   const passwordRef = useRef();
   const [error, setError] = useState();
   const [tokens, setTokens] = useState({});
+  const authCtx = useContext(AuthContext);
 
   const login = async (userInput) => {
     const options = {
@@ -20,7 +22,10 @@ const Login = () => {
       setTokens();
       const res = await fetch("http://localhost:5001/api/users/login", options);
       const data = await res.json();
-      setTokens(data);
+      localStorage.setItem("access", data.access);
+      localStorage.setItem("refresh", data.refresh);
+      authCtx.setCredentials(data);
+      navigate("/");
     } catch (error) {
       console.log(error.message);
       setError(error);
