@@ -89,7 +89,7 @@ const Home = () => {
     } catch (error) {
       console.log(error.message);
 
-      navigate("/login");
+      navigate("/welcome");
     }
     setIsLoading(false);
   }
@@ -241,7 +241,9 @@ const Home = () => {
             <p>{item.qty}</p>
             <p>{item.expiry.split("T")[0]}</p>
             <p>{item.owner}</p>
-            <p>{item.fridgeName}</p>
+            <a href={"/fridge/" + item.fridgeId}>
+              <p>{item.fridgeName}</p>
+            </a>
             <button
               onClick={() => {
                 setEditedItem(item);
@@ -277,7 +279,9 @@ const Home = () => {
                 <p>{item.qty}</p>
                 <p>{item.expiry.split("T")[0]}</p>
                 <p>{item.owner}</p>
-                <p>{item.fridgeName}</p>
+                <a href={"/fridge/" + item.fridgeId}>
+                  <p>{item.fridgeName}</p>
+                </a>
                 <button
                   onClick={() => {
                     setEditedItem(item);

@@ -11,8 +11,22 @@ import {
   Slide,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import CreateItem from "./addItem/CreateItem";
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 const FridgeDetail = () => {
+  const inputFormat = {
+    name: null,
+    qty: null,
+    expiry: null,
+    ownerEmail: null,
+    tag: null,
+    buyDate: null,
+  };
+
   const params = useParams();
   const [fridgeData, setFridgeData] = useState({});
   const authCtx = useContext(AuthContext);
@@ -26,6 +40,11 @@ const FridgeDetail = () => {
   const qtyRef = useRef();
   const expiryRef = useRef();
   const ownerRef = useRef();
+  const newMemberEmailRef = useRef();
+  const [fields, setFields] = useState([{ ...inputFormat }]);
+  const [isCreate, setIsCreate] = useState(false);
+  const [isAddMember, setAddMember] = useState(false);
+  const [addMemberError, setAddMemberError] = useState();
 
   async function updateItem(updatedData) {
     try {
@@ -69,6 +88,9 @@ const FridgeDetail = () => {
 
   async function getFridgeData(fridgeId) {
     setIsLoading(true);
+    setItemList([]);
+    setWarnItems([]);
+    setAddMemberError();
     try {
       const options = {
         method: "GET",
@@ -87,15 +109,14 @@ const FridgeDetail = () => {
       if (!res.ok) throw Error();
       const data = await res.json();
 
-      data.items.forEach((item) => {
-        item.fridgeId = data._id;
-        item.fridgeName = data.fridgeName;
-        item.fridgeMember = [...data.members];
-        item.fridgeAdmin = data.admin;
+      data.fridge.items.forEach((item) => {
+        item.fridgeId = data.fridge._id;
+        item.fridgeName = data.fridge.fridgeName;
+        item.fridgeMember = [...data.fridge.members];
+        item.fridgeAdmin = data.fridge.admin;
       });
-      setItemList((prevState) => [...prevState, ...data.items]);
-      for (const item of data.items) {
-        console.log(new Date(Date.now()));
+      setItemList((prevState) => [...prevState, ...data.fridge.items]);
+      for (const item of data.fridge.items) {
         if (
           // https://stackoverflow.com/questions/7751936/javascript-date-plus-2-weeks-14-days#:~:text=12096e5%20is%20a%20magic%20number,now()%20%2B%2012096e5)%3B
           new Date(item.expiry) <= new Date(Date.now() + 12096e5)
@@ -104,14 +125,116 @@ const FridgeDetail = () => {
         }
       }
       setLoggedInUser(data.userId);
+      setFridgeData(data);
       setIsLoading(false);
     } catch (error) {
       console.log(error);
     }
   }
+  function handleCreateClose() {
+    setIsCreate(false);
+  }
+
+  async function addNewItem(userInput) {
+    try {
+      const requestOptions = {
+        method: "PUT",
+        headers: new Headers({
+          Authorization:
+            "Bearer " + localStorage.getItem("access") ||
+            authCtx.credentials.access,
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify(userInput),
+      };
+
+      const res = await fetch(
+        "http://localhost:5001/api/users/items",
+        requestOptions
+      );
+      if (res.ok) {
+        setIsCreate(false);
+        getFridgeData(params.fridgeId);
+      } else {
+        throw Error();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  function handleCreateSubmit() {
+    const addedItems = [...fields];
+    console.log(addedItems);
+    addedItems.forEach((item) => {
+      if (typeof item.tag === "string") {
+        const tags = item.tag
+          .split(/,(\s)?/)
+          .filter((data) => data !== " " && data !== undefined);
+        item.tag = tags;
+      }
+      const date = new Date(item.buyDate);
+      item.buyDate = date;
+      const expiryDate = new Date(item.expiry);
+      item.expiry = expiryDate;
+      const qty = parseInt(item.qty);
+      item.qty = qty;
+      const ownerEmail = item.ownerEmail || fridgeData.fridge.adminEmail;
+      item.ownerEmail = ownerEmail;
+    });
+
+    const userInput = {
+      fridgeId: params.fridgeId,
+      items: addedItems,
+    };
+    console.log(userInput);
+    addNewItem(userInput);
+  }
+
+  async function addNewMember(newMemberEmail) {
+    try {
+      const requestOptions = {
+        method: "PATCH",
+        headers: new Headers({
+          Authorization:
+            "Bearer " + localStorage.getItem("access") ||
+            authCtx.credentials.access,
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          fridgeId: fridgeData.fridge._id,
+          email: newMemberEmail,
+        }),
+      };
+
+      const res = await fetch(
+        "http://localhost:5001/api/users/member",
+        requestOptions
+      );
+      if (res.ok) {
+        setAddMember(false);
+        getFridgeData(params.fridgeId);
+      } else {
+        // setAddMemberError(res.text());
+        const text = await res.json();
+        console.log(text);
+        throw Error(text);
+      }
+    } catch (error) {
+      console.log(error);
+      setAddMemberError(error);
+    }
+  }
+
+  function handleAddNewMember() {
+    const newMemberEmail = newMemberEmailRef.current.value;
+    addNewMember(newMemberEmail);
+  }
+  function handleAddMemberClose() {
+    setAddMember(false);
+  }
 
   useEffect(() => {
-    console.log(params.fridgeId);
     setItemList([]);
     setWarnItems([]);
     getFridgeData(params.fridgeId);
@@ -120,13 +243,26 @@ const FridgeDetail = () => {
   return (
     !isLoading && (
       <>
-        {/* <Button
+        <Button
           onClick={() => {
             setIsCreate(true);
           }}
         >
-          Create a New Fridge
-        </Button> */}
+          Add New Item
+        </Button>
+        <Button
+          disabled={loggedInUser === fridgeData.admin}
+          onClick={() => {
+            setAddMember(true);
+          }}
+        >
+          Add Member
+        </Button>
+        <p className="text-2xl">Members</p>
+        <p className="text-lg">{fridgeData.fridge.adminName}</p>
+        {fridgeData.fridge.memberNames.map((member) => (
+          <p>{member}</p>
+        ))}
         <p className="text-2xl">Expiring and Low-in-Stock items</p>
         <div
           key={Math.random()}
@@ -145,7 +281,7 @@ const FridgeDetail = () => {
             <p>{item.name}</p>
             <p>{item.qty}</p>
             <p>{item.expiry.split("T")[0]}</p>
-            <p>{item.owner}</p>
+            <p>{item.ownerName}</p>
             <p>{item.fridgeName}</p>
             <button
               onClick={() => {
@@ -181,7 +317,7 @@ const FridgeDetail = () => {
                 <p>{item.name}</p>
                 <p>{item.qty}</p>
                 <p>{item.expiry.split("T")[0]}</p>
-                <p>{item.owner}</p>
+                <p>{item.ownerName}</p>
                 <p>{item.fridgeName}</p>
                 <button
                   onClick={() => {
@@ -215,10 +351,16 @@ const FridgeDetail = () => {
                   defaultValue={item.expiry.split("T")[0]}
                 ></input>
                 <select id="item-owner" ref={ownerRef}>
-                  {item.fridgeMember.map((member) => {
-                    return <option value={member}>{member}</option>;
+                  {item.fridgeMember.map((member, idx) => {
+                    return (
+                      <option value={member}>
+                        {fridgeData.fridge.memberNames[idx]}
+                      </option>
+                    );
                   })}
-                  <option value={item.fridgeAdmin}>{item.fridgeAdmin}</option>
+                  <option value={item.fridgeAdmin}>
+                    {fridgeData.fridge.adminName}
+                  </option>
                 </select>
                 <p>{item.fridgeName}</p>
                 <button onClick={handleEditSubmit}>✅</button>
@@ -229,6 +371,47 @@ const FridgeDetail = () => {
             )}
           </div>
         ))}
+        <Dialog
+          open={isCreate}
+          TransitionComponent={Transition}
+          keepMounted
+          onClose={handleCreateClose}
+          aria-describedby="alert-dialog-slide-description"
+        >
+          <DialogTitle>Add New Item</DialogTitle>
+          <DialogContent>
+            <CreateItem
+              fields={fields}
+              setFields={setFields}
+              data={fridgeData.fridge}
+            ></CreateItem>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCreateSubmit}>Submit</Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={isAddMember}
+          TransitionComponent={Transition}
+          keepMounted
+          onClose={handleAddMemberClose}
+          aria-describedby="alert-dialog-slide-description"
+        >
+          <DialogTitle>Add Member</DialogTitle>
+          <DialogContent>
+            <input
+              type="email"
+              ref={newMemberEmailRef}
+              placeholder="Enter member's email"
+            ></input>
+            <p className="text-red-600">
+              {addMemberError && addMemberError.message}
+            </p>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleAddNewMember}>Submit</Button>
+          </DialogActions>
+        </Dialog>
       </>
     )
   );

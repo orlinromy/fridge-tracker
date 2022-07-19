@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 // source: https://codesandbox.io/s/q555kp8jj?fontsize=14&file=/src/index.js
 const CreateItem = (props) => {
+  console.log(props.data);
   const inputFormat = {
     name: null,
     qty: null,
@@ -10,7 +11,7 @@ const CreateItem = (props) => {
     tag: null,
     buyDate: null,
   };
-  // const [fields, setFields] = useState([]);
+  // const [fields, setFields] = useState([{ ...inputFormat }]);
 
   function handleAddField() {
     const values = [...props.fields];
@@ -28,6 +29,11 @@ const CreateItem = (props) => {
       }
       return prevState;
     });
+  }
+  function handleRemove(idx, e) {
+    const values = [...props.fields];
+    values.splice(idx, 1);
+    props.setFields(values);
   }
 
   return (
@@ -49,7 +55,7 @@ const CreateItem = (props) => {
             ></input>
             <input
               id="qty"
-              type="number"
+              type="text"
               placeholder="Enter Item Quantity"
               value={field.quantity}
               onChange={(e) => {
@@ -64,7 +70,25 @@ const CreateItem = (props) => {
                 handleChange(idx, e);
               }}
             ></input>
-            <input
+            <select
+              id="ownerEmail"
+              onChange={(e) => {
+                handleChange(idx, e);
+              }}
+              value={field.ownerEmail}
+            >
+              <option value={props.data.adminEmail}>
+                {props.data.adminName + " (" + props.data.adminEmail + ")"}
+              </option>
+              {props.data.memberEmails.map((memberEmail, idx) => {
+                return (
+                  <option value={memberEmail}>
+                    {props.data.memberNames[idx] + " (" + memberEmail + ")"}
+                  </option>
+                );
+              })}
+            </select>
+            {/* <input
               id="ownerEmail"
               type="email"
               placeholder="Enter owner's email"
@@ -72,7 +96,7 @@ const CreateItem = (props) => {
               onChange={(e) => {
                 handleChange(idx, e);
               }}
-            ></input>
+            ></input> */}
             <input
               id="tag"
               type="tag"
@@ -90,7 +114,14 @@ const CreateItem = (props) => {
                 handleChange(idx, e);
               }}
             ></input>
-            <button type="button"></button>
+            <button
+              type="button"
+              onClick={(e) => {
+                handleRemove(idx, e);
+              }}
+            >
+              Remove
+            </button>
           </div>
         );
       })}
