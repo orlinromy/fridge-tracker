@@ -19,7 +19,10 @@ const Registration = () => {
       body: JSON.stringify(userInput),
     };
     try {
-      const res = await fetch("http://localhost:5001/api/users/user", options);
+      const res = await fetch(
+        "http://localhost:5001/api/users/register",
+        options
+      );
       if (!res.ok) {
         console.log(res);
         throw new Error(res.statusText);

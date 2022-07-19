@@ -86,15 +86,15 @@ const FridgeDetail = () => {
       console.log(res);
       if (!res.ok) throw Error();
       const data = await res.json();
-      data.fridge.items.forEach((item) => {
-        item.fridgeId = data.fridge._id;
-        item.fridgeName = data.fridge.fridgeName;
-        item.fridgeMember = [...data.fridge.members];
-        item.fridgeAdmin = data.fridge.admin;
-        console.log(item);
+
+      data.items.forEach((item) => {
+        item.fridgeId = data._id;
+        item.fridgeName = data.fridgeName;
+        item.fridgeMember = [...data.members];
+        item.fridgeAdmin = data.admin;
       });
-      setItemList((prevState) => [...prevState, ...data.fridge.items]);
-      for (const item of data.fridge.items) {
+      setItemList((prevState) => [...prevState, ...data.items]);
+      for (const item of data.items) {
         console.log(new Date(Date.now()));
         if (
           // https://stackoverflow.com/questions/7751936/javascript-date-plus-2-weeks-14-days#:~:text=12096e5%20is%20a%20magic%20number,now()%20%2B%2012096e5)%3B
@@ -103,8 +103,6 @@ const FridgeDetail = () => {
           setWarnItems((prevState) => [...prevState, item]);
         }
       }
-      //   console.log(data);
-      //   setFridgeData(data);
       setLoggedInUser(data.userId);
       setIsLoading(false);
     } catch (error) {
@@ -114,6 +112,8 @@ const FridgeDetail = () => {
 
   useEffect(() => {
     console.log(params.fridgeId);
+    setItemList([]);
+    setWarnItems([]);
     getFridgeData(params.fridgeId);
   }, []);
 
