@@ -1,24 +1,24 @@
 import React, { useState } from "react";
 
 // source: https://codesandbox.io/s/q555kp8jj?fontsize=14&file=/src/index.js
-const CreateItem = () => {
+const CreateItem = (props) => {
   const inputFormat = {
     name: null,
-    quantity: null,
+    qty: null,
     expiry: null,
     ownerEmail: null,
     tag: null,
     buyDate: null,
   };
-  const [fields, setFields] = useState([{ ...inputFormat }]);
+  // const [fields, setFields] = useState([]);
 
   function handleAddField() {
-    const values = [...fields];
+    const values = [...props.fields];
     values.push(inputFormat);
-    setFields(values);
+    props.setFields(values);
   }
   function handleChange(idx, e) {
-    setFields((prevState) => {
+    props.setFields((prevState) => {
       if (e.target.id === "expiry" || e.target.id === "buyDate") {
         prevState[idx][e.target.id] = new Date(e.target.value)
           .toISOString()
@@ -35,7 +35,7 @@ const CreateItem = () => {
       <button className="border border-solid" onClick={handleAddField}>
         Add field
       </button>
-      {fields.map((field, idx) => {
+      {props.fields.map((field, idx) => {
         return (
           <div key={Math.random()}>
             <input
@@ -48,7 +48,7 @@ const CreateItem = () => {
               }}
             ></input>
             <input
-              id="quantity"
+              id="qty"
               type="number"
               placeholder="Enter Item Quantity"
               value={field.quantity}
