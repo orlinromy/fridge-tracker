@@ -1,14 +1,14 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
 
 const Registration = () => {
   const navigate = useNavigate();
   const emailRef = useRef();
   const passwordRef = useRef();
-  // const someRef = useRef();
   const nameRef = useRef();
+  const authCtx = useContext(AuthContext);
   const [error, setError] = useState();
-  const [tokens, setTokens] = useState();
 
   const register = async (userInput) => {
     const options = {
@@ -20,8 +20,35 @@ const Registration = () => {
     };
     try {
       const res = await fetch("http://localhost:5001/api/users/user", options);
+      if (!res.ok) {
+        console.log(res);
+        throw new Error(res.statusText);
+      }
       const data = await res.json();
-      console.log(data);
+      console.log("registration: " + JSON.stringify(data));
+
+      // login the user after registration
+      const loginOptions = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userInput),
+      };
+
+      const loginRes = await fetch(
+        "http://localhost:5001/api/users/login",
+        loginOptions
+      );
+      if (!loginRes.ok) {
+        console.log(loginRes);
+        throw new Error(loginRes.statusText);
+      }
+      const loginData = await loginRes.json();
+      localStorage.setItem("access", loginData.access);
+      localStorage.setItem("refresh", loginData.refresh);
+      authCtx.setCredentials(loginData);
+      navigate("/");
     } catch {
       console.log(error);
     }

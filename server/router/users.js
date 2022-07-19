@@ -113,20 +113,49 @@ router.post(
 );
 
 // Get all fridge items
-router.get("/items", async (req, res) => {
+router.post("/fridges", auth, async (req, res) => {
   try {
-    const users = await Fridge.find().select("items");
-    res.status(200).json(users);
+    let fridgeIds = [];
+    User.findOne({ _id: req.decoded.id }, "fridgeId", (err, user) => {
+      fridgeIds = user.fridgeId;
+      Fridge.find(
+        {
+          _id: { $in: fridgeIds },
+        },
+        (err, result) => {
+          if (err) throw Error(err);
+          res.status(200).json({ userId: req.decoded.id, result });
+        }
+      );
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
+});
+
+router.post("/userId", auth, async (req, res) => {
+  console.log(req.body);
 });
 
 // Create fridge
 router.put(
   "/fridge",
   auth,
-  [check("fridgeName", "fridge name cannot be empty").notEmpty()],
+  [
+    check("fridgeName", "fridge name cannot be empty").notEmpty(),
+    check("memberEmails", "members are not in an array").optional().isArray(),
+    check("membersEmail.*", "some email is not valid").isEmail(),
+    check("items", "items are not in an array").optional().isArray(),
+    check("items.*.name", "item name cannot be empty").optional().notEmpty(),
+    check("items.*.qty", "quantity is not in numeric").isNumeric(),
+    check("items.*.tag", "tag is not in an array").optional().isArray(),
+    check("items.*.buyDate", "buyDate is not in an array")
+      .optional()
+      .isISO8601(),
+    check("items.*.ownerEmail", "owner email is not valid")
+      .optional()
+      .isEmail(),
+  ],
   async (req, res) => {
     console.log(req.body);
     try {
@@ -135,8 +164,35 @@ router.put(
       if (err.errors.length !== 0) {
         return res.status(400).json({ error: 400, message: err.array() });
       }
+
       const payload = req.body;
       payload.admin = req.decoded.id;
+      payload.members = [];
+
+      // get all the emails that need to be searched
+      const emails = [...payload.memberEmails];
+      for (const item of payload.items) {
+        if (!emails.includes(item.ownerEmail)) {
+          emails.push(item.ownerEmail);
+        }
+      }
+      const userIdsObj = {};
+      // get the userid from the emails
+      const [users] = await Promise.all([User.find({ email: emails })]);
+
+      console.log(users);
+
+      for (const user of users) {
+        userIdsObj[user.email] = user._id;
+      }
+
+      for (const email of payload.memberEmails) {
+        payload.members = [...payload.members, userIdsObj[email]];
+      }
+
+      payload.items.forEach((item, idx) => {
+        payload.items[idx].owner = userIdsObj[payload.items[idx].ownerEmail];
+      });
 
       const createdFridge = await Fridge.create(payload);
 
@@ -155,9 +211,9 @@ router.put(
         }
       });
 
-      console.log("created fridge: ", createdFridge.email, createdFridge._id);
-      res.status(200).json({ status: 200, message: "successfully added" });
+      res.status(200).json({ status: 200, data: createdFridge });
     } catch (error) {
+      console.log(error);
       res.status(400).json({ status: "error 400", message: error.message });
     }
   }
@@ -198,7 +254,17 @@ router.patch(
 // Add items to fridge
 router.put(
   "/items",
-  [check("items", "fields cannot be empty").notEmpty()],
+  [
+    check("fridgeId", "fridgeId needs to be provided").notEmpty(),
+    check("name", "name cannot be empty").notEmpty(),
+    check("qty", "quantity cannot be empty").notEmpty(),
+    check("qty", "quantity is not numeric").isNumeric(),
+    check("expiry", "expiry date cannot be empty").notEmpty(),
+    check("expiry", "expiry date is not in date format").isISO8601(),
+    check("owner", "owner cannot be empty").notEmpty(),
+    check("tag", "tag is not an array").optional().isArray(),
+    check("buyDate", "buy date is not in date format").optional().isISO8601(),
+  ],
   auth,
   async (req, res) => {
     try {
@@ -207,11 +273,31 @@ router.put(
         return res.status(400).json({ error: 400, message: err.array() });
       }
 
-      const addItems = await Fridge.findOne({ email: req.body.fridgeId });
-      addItems.items = req.body.items || validUser.items;
-      addItems.save();
+      const fridge = await Fridge.findOne({ _id: req.body.fridgeId });
+      console.log(fridge);
 
-      res.status(200).json(addItems);
+      if (
+        (fridge.admin === req.decoded.id ||
+          fridge.members.includes(req.decoded.id)) &&
+        (fridge.admin === req.body.owner ||
+          fridge.members.includes(req.body.owner))
+      ) {
+        const items = {
+          name: req.body.name,
+          qty: req.body.qty,
+          expiry: req.body.expiry,
+          owner: req.body.owner,
+          buyDate: req.body.buyDate,
+          tag: req.body.tag || [],
+        };
+
+        fridge.items = [...fridge.items, items];
+        fridge.save();
+
+        res.status(200).json(fridge);
+      } else {
+        res.status(400).json({ error: 400, message: "item is not added" });
+      }
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
@@ -224,6 +310,7 @@ router.patch("/item", fridgeAuth, async (req, res) => {
     // const itemUpdate = await Fridge.findOne({ fridgeId: req.body.fridgeId });
     // itemUpdate.items = req.body.items || itemUpdate.items;
     // itemUpdate.save();
+    console.log(req);
     const fridgeItems = await Fridge.findOne({ _id: req.body.fridgeId });
     console.log(req.decoded);
     let isFound = false;
@@ -235,6 +322,8 @@ router.patch("/item", fridgeAuth, async (req, res) => {
         if (reqItemId.equals(item._id)) {
           item.expiry = req.body.expiry || item.expiry;
           item.qty = req.body.qty || item.qty;
+          item.name = req.body.name || item.name;
+          item.owner = req.body.owner || item.owner;
           isFound = true;
         }
       }
@@ -247,6 +336,8 @@ router.patch("/item", fridgeAuth, async (req, res) => {
           if (item.owner === req.decoded.id) {
             item.expiry = req.body.expiry || item.expiry;
             item.qty = req.body.qty || item.qty;
+            item.name = req.body.name || item.name;
+            item.owner = req.body.owner || item.owner;
             isFound = true;
           } else {
             return res
@@ -294,6 +385,23 @@ router.delete("/admin-items", auth, async (req, res) => {
   try {
     const deleted = await Fridge.deleteOne({ fridgeId: req.body.fridgeId });
     res.status(200).json(deleted);
+  } catch (error) {
+    res.status(400).json({ error: 400, message: error.message });
+  }
+});
+
+// Get all items for a particular fridge
+router.get("/fridge/:fridgeId", auth, async (req, res) => {
+  try {
+    const fridge = await Fridge.findOne({ _id: req.params.fridgeId });
+    if (
+      fridge.admin === req.decoded.id ||
+      fridge.members.includes(req.decoded.id)
+    ) {
+      res.status(200).json({ userId: req.decoded.id, fridge });
+    } else {
+      res.status(403).json({ error: 403, message: "not authorized" });
+    }
   } catch (error) {
     res.status(400).json({ error: 400, message: error.message });
   }

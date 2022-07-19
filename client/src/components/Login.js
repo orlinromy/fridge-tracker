@@ -7,7 +7,7 @@ const Login = () => {
   const emailRef = useRef();
   const passwordRef = useRef();
   const [error, setError] = useState();
-  const [tokens, setTokens] = useState({});
+  // const [tokens, setTokens] = useState({});
   const authCtx = useContext(AuthContext);
 
   const login = async (userInput) => {
@@ -19,7 +19,6 @@ const Login = () => {
       body: JSON.stringify(userInput),
     };
     try {
-      setTokens();
       const res = await fetch("http://localhost:5001/api/users/login", options);
       const data = await res.json();
       localStorage.setItem("access", data.access);
@@ -52,7 +51,6 @@ const Login = () => {
         <label htmlFor="password">Password:</label>
         <input id="password" ref={passwordRef} type="password"></input>
         <button type="submit">Login</button>
-        <p>{tokens && JSON.stringify(tokens)}</p>
       </form>
     </div>
   );

@@ -132,18 +132,44 @@ const Home = () => {
     updateItem(updatedData);
   }
 
+  async function createNewFridge(userInput) {
+    try {
+      const requestOptions = {
+        method: "PUT",
+        headers: new Headers({
+          Authorization:
+            "Bearer " + localStorage.getItem("access") ||
+            authCtx.credentials.access,
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify(userInput),
+      };
+
+      const res = await fetch(
+        "http://localhost:5001/api/users/fridge",
+        requestOptions
+      );
+      if (!res.ok) throw Error();
+      const data = await res.json();
+      console.log(data);
+      const newFridgeId = data.data._id;
+      navigate(`/fridge/${newFridgeId}`);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   function handleCreateSubmit() {
-    console.log("run create submit");
     const fridgeName = createFridgeNameRef.current.value;
     const fridgeMembers = createFridgeMembersRef.current.value;
-    const members = fridgeMembers
+    const memberEmails = fridgeMembers
       .split(/,(\s)?/)
       .filter((data) => data !== " " && data != undefined);
     const name = createNameRef.current.value;
-    const qty = createQuantityRef.current.value;
+    const qty = parseInt(createQuantityRef.current.value);
     const expiry = new Date(createExpiryRef.current.value);
     const buyDate = new Date(createBuyDateRef.current.value);
-    const owner = createOwnerRef.current.value;
+    const ownerEmail = createOwnerRef.current.value;
     const tags = createTagRef.current.value;
     const tag = tags
       .split(/,(\s)?/)
@@ -151,16 +177,20 @@ const Home = () => {
 
     console.log({
       fridgeName,
-      members,
-      items: [{ name, qty, owner, tag, expiry, buyDate }],
+      memberEmails,
+      items: [{ name, qty, ownerEmail, tag, expiry, buyDate }],
     });
+    const userInput = {
+      fridgeName,
+      memberEmails,
+      items: [{ name, qty, ownerEmail, tag, expiry, buyDate }],
+    };
+    createNewFridge(userInput);
   }
 
   function handleCreateClose() {
     setIsCreate(false);
   }
-
-  function handleCreateSubmit() {}
 
   useEffect(() => {
     setLoggedInUser("");
@@ -175,7 +205,7 @@ const Home = () => {
             setIsCreate(true);
           }}
         >
-          Create a New Item
+          Create a New Fridge
         </Button>
         <p className="text-2xl">Expiring and Low-in-Stock items</p>
         <div
@@ -324,7 +354,7 @@ const Home = () => {
             <label htmlFor="tag">Tag:</label>
             <input id="tag" ref={createTagRef}></input>
             <br />
-            {error && (
+            {/* {error && (
               <ul>
                 {error.map((err) => (
                   <li key={Math.random()} style={{ color: "red" }}>
@@ -332,7 +362,7 @@ const Home = () => {
                   </li>
                 ))}
               </ul>
-            )}
+            )} */}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCreateSubmit}>Submit</Button>

@@ -4,7 +4,8 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./components/Home";
 import Login from "./components/Login";
 import Registration from "./components/Registration";
-import CreateItem from "./components/CreateItem";
+import CreateItem from "./components/addItem/CreateItem";
+import FridgeDetail from "./components/FridgeDetail";
 import AuthContext from "./context/AuthContext";
 
 function App() {
@@ -20,6 +21,11 @@ function App() {
           ></Route>
           <Route path="/login" element={<Login></Login>}></Route>
           <Route path="/create" element={<CreateItem></CreateItem>}></Route>
+          <Route
+            path="/fridge/:fridgeId"
+            element={<FridgeDetail></FridgeDetail>}
+          ></Route>
+          <Route path="/test" element={<CreateItem></CreateItem>}></Route>
         </Routes>
       </div>
     </AuthContext.Provider>
