@@ -114,12 +114,21 @@ router.post(
 
 // Get all fridge items
 
-router.get("/items", auth, async (req, res) => {
+router.post("/fridges", auth, async (req, res) => {
   try {
-    const fridges = await Fridge.find({
-      $or: [{ admin: req.decoded.id }, { members: req.decoded.id }],
+    let fridgeIds = [];
+    User.findOne({ _id: req.decoded.id }, "fridgeId", (err, user) => {
+      fridgeIds = user.fridgeId;
+      Fridge.find(
+        {
+          _id: { $in: fridgeIds },
+        },
+        (err, result) => {
+          if (err) throw Error(err);
+          res.status(200).json({ userId: req.decoded.id, result });
+        }
+      );
     });
-    res.status(200).json({ userId: req.decoded.id, fridges });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
