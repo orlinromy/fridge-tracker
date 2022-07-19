@@ -18,16 +18,11 @@ const CreateItem = () => {
     setFields(values);
   }
   function handleChange(idx, e) {
-    console.log(e.target.id);
-    console.log(e.target.value);
     setFields((prevState) => {
       if (e.target.id === "expiry" || e.target.id === "buyDate") {
         prevState[idx][e.target.id] = new Date(e.target.value)
           .toISOString()
           .split("T")[0];
-        console.log(
-          typeof new Date(e.target.value).toISOString().split("T")[0]
-        );
       } else {
         prevState[idx][e.target.id] = e.target.value;
       }
@@ -44,7 +39,6 @@ const CreateItem = () => {
         return (
           <div key={Math.random()}>
             <input
-              // key={"name" + idx}
               id="name"
               type="text"
               placeholder="Enter Item Name"
@@ -54,7 +48,6 @@ const CreateItem = () => {
               }}
             ></input>
             <input
-              // key={"quantity" + idx}
               id="quantity"
               type="number"
               placeholder="Enter Item Quantity"
@@ -64,7 +57,6 @@ const CreateItem = () => {
               }}
             ></input>
             <input
-              // key={"expiry" + idx}
               id="expiry"
               type="date"
               value={field.expiry}
@@ -73,7 +65,6 @@ const CreateItem = () => {
               }}
             ></input>
             <input
-              // key={"ownerEmail" + idx}
               id="ownerEmail"
               type="email"
               placeholder="Enter owner's email"
@@ -83,7 +74,6 @@ const CreateItem = () => {
               }}
             ></input>
             <input
-              // key={"tag" + idx}
               id="tag"
               type="tag"
               placeholder="Tags (separated by comma)"
@@ -93,7 +83,6 @@ const CreateItem = () => {
               }}
             ></input>
             <input
-              // key={"buyDate" + idx}
               id="buyDate"
               type="date"
               value={field.buyDate}
