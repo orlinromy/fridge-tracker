@@ -164,7 +164,7 @@ const Home = () => {
     const fridgeMembers = createFridgeMembersRef.current.value;
     const memberEmails = fridgeMembers
       .split(/,(\s)?/)
-      .filter((data) => data !== " " && data != undefined);
+      .filter((data) => data !== " " && data !== undefined);
     const name = createNameRef.current.value;
     const qty = parseInt(createQuantityRef.current.value);
     const expiry = new Date(createExpiryRef.current.value);
@@ -173,7 +173,7 @@ const Home = () => {
     const tags = createTagRef.current.value;
     const tag = tags
       .split(/,(\s)?/)
-      .filter((data) => data !== " " && data != undefined);
+      .filter((data) => data !== " " && data !== undefined);
 
     console.log({
       fridgeName,
