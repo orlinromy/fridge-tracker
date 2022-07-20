@@ -12,11 +12,12 @@ const Login = () => {
   const paperStyle = {
     padding: 30,
     height: "73vh",
-    width: 300,
+    width: "40vw",
     margin: "0 auto",
   };
   const btnstyle = { margin: "45px 0" };
   const fieldstyle = {
+    marginTop: "12px",
     marginBottom: "12px",
   };
   const login = async (userInput) => {
@@ -54,7 +55,7 @@ const Login = () => {
         <Grid align="center">
           <h2 style={{ marginBottom: "2px", marginTop: "55px" }}>Log In</h2>
           <Typography variant="caption" gutterBottom>
-            Please log in to view your fridges !
+            Please log in to view your fridges!
           </Typography>
         </Grid>
         <TextField

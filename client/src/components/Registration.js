@@ -12,12 +12,13 @@ const Registration = () => {
   const paperStyle = {
     padding: 30,
     height: "73vh",
-    width: 300,
+    width: "40vw",
     margin: "0 auto",
   };
   const btnstyle = { margin: "30px 0" };
   const headerStyle = { marginTop: "35px", marginBottom: "10px" };
   const fieldstyle = {
+    marginTop: "12px",
     marginBottom: "12px",
   };
   const register = async (userInput) => {
@@ -84,7 +85,7 @@ const Registration = () => {
         <Grid align="center">
           <h2 style={headerStyle}>Register</h2>
           <Typography variant="caption" gutterBottom>
-            Please fill this form to create an account !
+            Please fill this form to create an account!
           </Typography>
         </Grid>
         <form>

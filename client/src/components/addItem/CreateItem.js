@@ -1,21 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 // source: https://codesandbox.io/s/q555kp8jj?fontsize=14&file=/src/index.js
 const CreateItem = (props) => {
-  console.log(props.data);
-  const inputFormat = {
-    name: null,
-    qty: null,
-    expiry: null,
-    ownerEmail: null,
-    tag: null,
-    buyDate: null,
-  };
+  // console.log(props.data);
+  // const inputFormat = {
+  //   name: null,
+  //   qty: null,
+  //   expiry: null,
+  //   ownerEmail: null,
+  //   tag: null,
+  //   buyDate: null,
+  // };
+
   // const [fields, setFields] = useState([{ ...inputFormat }]);
+  // console.log(props.fields);
+  console.log(props);
 
   function handleAddField() {
     const values = [...props.fields];
-    values.push(inputFormat);
+    values.push({ ...props.inputFormat });
     props.setFields(values);
   }
   function handleChange(idx, e) {
@@ -57,7 +60,7 @@ const CreateItem = (props) => {
               id="qty"
               type="text"
               placeholder="Enter Item Quantity"
-              value={field.quantity}
+              value={field.qty}
               onChange={(e) => {
                 handleChange(idx, e);
               }}
@@ -70,33 +73,38 @@ const CreateItem = (props) => {
                 handleChange(idx, e);
               }}
             ></input>
-            <select
-              id="ownerEmail"
-              onChange={(e) => {
-                handleChange(idx, e);
-              }}
-              value={field.ownerEmail}
-            >
-              <option value={props.data.adminEmail}>
-                {props.data.adminName + " (" + props.data.adminEmail + ")"}
-              </option>
-              {props.data.memberEmails.map((memberEmail, idx) => {
-                return (
-                  <option value={memberEmail}>
-                    {props.data.memberNames[idx] + " (" + memberEmail + ")"}
-                  </option>
-                );
-              })}
-            </select>
-            {/* <input
-              id="ownerEmail"
-              type="email"
-              placeholder="Enter owner's email"
-              value={field.ownerEmail}
-              onChange={(e) => {
-                handleChange(idx, e);
-              }}
-            ></input> */}
+            {props.isAdmin && props.mode !== "create" && (
+              <select
+                id="ownerEmail"
+                onChange={(e) => {
+                  handleChange(idx, e);
+                }}
+                value={field.ownerEmail}
+              >
+                <option value={props.data.adminEmail}>
+                  {props.data.adminName + " (" + props.data.adminEmail + ")"}
+                </option>
+                {props.data.memberEmails.length !== 0 &&
+                  props.data.memberEmails.map((memberEmail, idx) => {
+                    return (
+                      <option value={memberEmail}>
+                        {props.data.memberNames[idx] + " (" + memberEmail + ")"}
+                      </option>
+                    );
+                  })}
+              </select>
+            )}
+            {props.mode == "create" && (
+              <input
+                id="ownerEmail"
+                type="email"
+                placeholder="Enter owner's email"
+                value={field.ownerEmail}
+                onChange={(e) => {
+                  handleChange(idx, e);
+                }}
+              ></input>
+            )}
             <input
               id="tag"
               type="tag"

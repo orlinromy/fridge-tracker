@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import CreateItem from "./addItem/CreateItem";
+import FridgeComp from "./fridge/FridgeComp";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -35,7 +36,7 @@ const FridgeDetail = () => {
   const [warnItems, setWarnItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editedItem, setEditedItem] = useState({});
-  const [loggedInUser, setLoggedInUser] = useState("");
+  const [loggedInUser, setLoggedInUser] = useState({});
   const nameRef = useRef();
   const qtyRef = useRef();
   const expiryRef = useRef();
@@ -45,9 +46,12 @@ const FridgeDetail = () => {
   const [isCreate, setIsCreate] = useState(false);
   const [isAddMember, setAddMember] = useState(false);
   const [addMemberError, setAddMemberError] = useState();
+  const [openDelete, setOpenDelete] = useState(false);
+  const [deleteItem, setDeleteItem] = useState("");
 
   async function updateItem(updatedData) {
     try {
+      console.log(updatedData);
       const options = {
         method: "PATCH",
         headers: new Headers({
@@ -58,15 +62,17 @@ const FridgeDetail = () => {
         }),
         body: JSON.stringify(updatedData),
       };
+
       console.log(options);
       //   console.log(authCtx.credentials.access);
       const res = await fetch("http://localhost:5001/api/users/item", options);
       console.log(res);
       if (res.ok) {
-        getFridgeData(params.fridgeId);
         setEditedItem({});
+        getFridgeData(params.fridgeId);
       } else {
-        throw Error();
+        const text = await res.text();
+        throw Error(text);
       }
     } catch (err) {
       console.log(err);
@@ -115,22 +121,28 @@ const FridgeDetail = () => {
         item.fridgeMember = [...data.fridge.members];
         item.fridgeAdmin = data.fridge.admin;
       });
-      setItemList((prevState) => [...prevState, ...data.fridge.items]);
       for (const item of data.fridge.items) {
-        if (
-          // https://stackoverflow.com/questions/7751936/javascript-date-plus-2-weeks-14-days#:~:text=12096e5%20is%20a%20magic%20number,now()%20%2B%2012096e5)%3B
-          new Date(item.expiry) <= new Date(Date.now() + 12096e5)
-        ) {
+        // https://stackoverflow.com/questions/7751936/javascript-date-plus-2-weeks-14-days#:~:text=12096e5%20is%20a%20magic%20number,now()%20%2B%2012096e5)%3B
+        if (new Date(item.expiry) <= new Date(Date.now() + 604800000)) {
+          if (new Date(Date.now()) <= new Date(new Date(item.expiry))) {
+            item.warn = "expiring";
+          } else {
+            item.warn = "expired";
+          }
           setWarnItems((prevState) => [...prevState, item]);
         }
+        setItemList((prevState) => [...prevState, item]);
+        console.log(item);
       }
-      setLoggedInUser(data.userId);
+      setLoggedInUser({ userId: data.userId, userEmail: data.userEmail });
       setFridgeData(data);
+      inputFormat.ownerEmail = loggedInUser.userEmail;
       setIsLoading(false);
     } catch (error) {
       console.log(error);
     }
   }
+
   function handleCreateClose() {
     setIsCreate(false);
   }
@@ -154,6 +166,7 @@ const FridgeDetail = () => {
       );
       if (res.ok) {
         setIsCreate(false);
+        setFields([{ ...inputFormat }]);
         getFridgeData(params.fridgeId);
       } else {
         throw Error();
@@ -179,8 +192,14 @@ const FridgeDetail = () => {
       item.expiry = expiryDate;
       const qty = parseInt(item.qty);
       item.qty = qty;
-      const ownerEmail = item.ownerEmail || fridgeData.fridge.adminEmail;
-      item.ownerEmail = ownerEmail;
+
+      if (loggedInUser.userId === fridgeData.fridge.admin) {
+        const ownerEmail = item.ownerEmail || fridgeData.fridge.adminEmail;
+        item.ownerEmail = ownerEmail;
+      } else {
+        const ownerEmail = loggedInUser.userEmail;
+        item.ownerEmail = ownerEmail;
+      }
     });
 
     const userInput = {
@@ -218,11 +237,11 @@ const FridgeDetail = () => {
         // setAddMemberError(res.text());
         const text = await res.json();
         console.log(text);
+        setAddMemberError(text);
         throw Error(text);
       }
     } catch (error) {
       console.log(error);
-      setAddMemberError(error);
     }
   }
 
@@ -230,13 +249,53 @@ const FridgeDetail = () => {
     const newMemberEmail = newMemberEmailRef.current.value;
     addNewMember(newMemberEmail);
   }
+
   function handleAddMemberClose() {
     setAddMember(false);
+  }
+
+  function handleDeleteClose() {
+    setOpenDelete(false);
+  }
+
+  async function handleDeleteConfirm() {
+    const userInput = {
+      fridgeId: fridgeData.fridge._id,
+      itemId: deleteItem,
+    };
+    try {
+      const requestOptions = {
+        method: "DELETE",
+        headers: new Headers({
+          Authorization:
+            "Bearer " + localStorage.getItem("access") ||
+            authCtx.credentials.access,
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify(userInput),
+      };
+
+      const res = await fetch(
+        "http://localhost:5001/api/users/items",
+        requestOptions
+      );
+      if (res.ok) {
+        setOpenDelete(false);
+        getFridgeData(params.fridgeId);
+      } else {
+        const deleted = await res.json();
+        console.log(deleted);
+        throw Error();
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   useEffect(() => {
     setItemList([]);
     setWarnItems([]);
+    setFields([{ ...inputFormat }]);
     getFridgeData(params.fridgeId);
   }, []);
 
@@ -251,53 +310,114 @@ const FridgeDetail = () => {
           Add New Item
         </Button>
         <Button
-          disabled={loggedInUser === fridgeData.admin}
+          disabled={loggedInUser.userId !== fridgeData.fridge.admin}
           onClick={() => {
             setAddMember(true);
           }}
         >
           Add Member
         </Button>
+        <p>{JSON.stringify(loggedInUser)}</p>
+        <p>{fridgeData.fridge.admin}</p>
         <p className="text-2xl">Members</p>
         <p className="text-lg">{fridgeData.fridge.adminName}</p>
         {fridgeData.fridge.memberNames.map((member) => (
           <p>{member}</p>
         ))}
-        <p className="text-2xl">Expiring and Low-in-Stock items</p>
-        <div
-          key={Math.random()}
-          className="tableHeader flex flex-column justify-around"
+
+        <FridgeComp
+          type="warn"
+          fridgeData={fridgeData}
+          itemList={warnItems}
+          loggedInUser={loggedInUser}
+        ></FridgeComp>
+        <FridgeComp
+          type="normal"
+          fridgeData={fridgeData}
+          itemList={itemList}
+          editedItem={editedItem}
+          setEditedItem={setEditedItem}
+          loggedInUser={loggedInUser}
+          setOpenDelete={setOpenDelete}
+          setDeleteItem={setDeleteItem}
+          handleEditSubmit={handleEditSubmit}
+          updateItem={updateItem}
+        ></FridgeComp>
+
+        <Dialog
+          open={isCreate}
+          TransitionComponent={Transition}
+          keepMounted
+          onClose={handleCreateClose}
+          aria-describedby="alert-dialog-slide-description"
         >
-          <p>Item Name</p>
-          <p>Quantity</p>
-          <p>Expiry Date</p>
-          <p>Owner</p>
-          <p>Fridge Name</p>
-          <p className="text-slate-200">Button 1</p>
-          <p className="text-slate-200">Button 2</p>
-        </div>
-        {warnItems.map((item) => (
-          <div key={Math.random()} className="flex flex-column justify-around">
-            <p>{item.name}</p>
-            <p>{item.qty}</p>
-            <p>{item.expiry.split("T")[0]}</p>
-            <p>{item.ownerName}</p>
-            <p>{item.fridgeName}</p>
-            <button
-              onClick={() => {
-                setEditedItem(item);
-              }}
-              disabled={item.owner !== loggedInUser}
-            >
-              {item.owner === loggedInUser ? "✏️" : "❌"}
-            </button>
-            <Button variant="outlined" color="error">
-              Delete
-            </Button>
-          </div>
-        ))}
-        {/* start fridge module*/}
-        <p className="text-2xl">User: {loggedInUser}</p>
+          <DialogTitle>Add New Item</DialogTitle>
+          <DialogContent>
+            <CreateItem
+              fields={fields}
+              setFields={setFields}
+              data={fridgeData.fridge}
+              inputFormat={inputFormat}
+              isAdmin={loggedInUser.userId === fridgeData.fridge.admin}
+              loggedInUser={loggedInUser}
+            ></CreateItem>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCreateSubmit}>Submit</Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={isAddMember}
+          TransitionComponent={Transition}
+          keepMounted
+          onClose={handleAddMemberClose}
+          aria-describedby="alert-dialog-slide-description"
+        >
+          <DialogTitle>Add Member</DialogTitle>
+          <DialogContent>
+            <input
+              type="email"
+              ref={newMemberEmailRef}
+              placeholder="Enter member's email"
+            ></input>
+            <p className="text-red-600">
+              {addMemberError && addMemberError.message}
+            </p>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleAddNewMember}>Submit</Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={openDelete}
+          TransitionComponent={Transition}
+          keepMounted
+          onClose={handleDeleteClose}
+          aria-describedby="alert-dialog-slide-description"
+        >
+          <DialogTitle>Are you sure you want to delete this item?</DialogTitle>
+          <DialogContent>
+            <p>Item will not be recoverable</p>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDeleteConfirm}>Yes</Button>
+            <Button onClick={handleDeleteClose}>No</Button>
+          </DialogActions>
+        </Dialog>
+      </>
+    )
+  );
+};
+
+export default FridgeDetail;
+
+{
+  /* old fridge code */
+}
+{
+  /* <p className="text-2xl">Items in {fridgeData.fridge.fridgeName}</p>
         <div
           key={Math.random()}
           className="tableHeader flex flex-column justify-around"
@@ -311,7 +431,17 @@ const FridgeDetail = () => {
           <p className="text-slate-200">Button 2</p>
         </div>
         {itemList.map((item) => (
-          <div key={Math.random()} className="flex flex-column justify-around">
+          <div
+            key={Math.random()}
+            className={
+              "flex flex-column justify-around " +
+              (item.warn === "expiring"
+                ? "bg-orange-300"
+                : item.warn === "expired"
+                ? "bg-red-300"
+                : "")
+            }
+          >
             {!editedItem || editedItem._id !== item._id ? (
               <>
                 <p>{item.name}</p>
@@ -324,16 +454,27 @@ const FridgeDetail = () => {
                     setEditedItem(item);
                   }}
                   disabled={
-                    item.owner !== loggedInUser &&
-                    loggedInUser !== item.fridgeAdmin
+                    item.owner !== loggedInUser.userId &&
+                    loggedInUser.userId !== item.fridgeAdmin
                   }
                 >
-                  {item.owner === loggedInUser ||
-                  loggedInUser === item.fridgeAdmin
+                  {item.owner === loggedInUser.userId ||
+                  loggedInUser.userId === item.fridgeAdmin
                     ? "✏️"
                     : "❌"}
                 </button>
-                <Button variant="outlined" color="error">
+                <Button
+                  variant="outlined"
+                  color="error"
+                  disabled={
+                    item.owner !== loggedInUser.userId &&
+                    loggedInUser.userId !== item.fridgeAdmin
+                  }
+                  onClick={() => {
+                    setOpenDelete(true);
+                    setDeleteItem(item._id);
+                  }}
+                >
                   Delete
                 </Button>
               </>
@@ -364,57 +505,77 @@ const FridgeDetail = () => {
                 </select>
                 <p>{item.fridgeName}</p>
                 <button onClick={handleEditSubmit}>✅</button>
-                <Button variant="outlined" color="error">
-                  Delete
-                </Button>
+                <button
+                  onClick={() => {
+                    setEditedItem({});
+                  }}
+                >
+                  Cancel
+                </button>
               </>
             )}
           </div>
-        ))}
-        <Dialog
-          open={isCreate}
-          TransitionComponent={Transition}
-          keepMounted
-          onClose={handleCreateClose}
-          aria-describedby="alert-dialog-slide-description"
+        ))} */
+}
+{
+  /* <p className="text-2xl">Expiring and Low-in-Stock items</p>
+        <div
+          key={Math.random()}
+          className="tableHeader flex flex-column justify-around"
         >
-          <DialogTitle>Add New Item</DialogTitle>
-          <DialogContent>
-            <CreateItem
-              fields={fields}
-              setFields={setFields}
-              data={fridgeData.fridge}
-            ></CreateItem>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCreateSubmit}>Submit</Button>
-          </DialogActions>
-        </Dialog>
-        <Dialog
-          open={isAddMember}
-          TransitionComponent={Transition}
-          keepMounted
-          onClose={handleAddMemberClose}
-          aria-describedby="alert-dialog-slide-description"
-        >
-          <DialogTitle>Add Member</DialogTitle>
-          <DialogContent>
-            <input
-              type="email"
-              ref={newMemberEmailRef}
-              placeholder="Enter member's email"
-            ></input>
-            <p className="text-red-600">
-              {addMemberError && addMemberError.message}
-            </p>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleAddNewMember}>Submit</Button>
-          </DialogActions>
-        </Dialog>
-      </>
-    )
-  );
-};
-
-export default FridgeDetail;
+          <p>Item Name</p>
+          <p>Quantity</p>
+          <p>Expiry Date</p>
+          <p>Owner</p>
+          <p>Fridge Name</p>
+          <p className="text-slate-200">Button 1</p>
+          <p className="text-slate-200">Button 2</p>
+        </div>
+        {warnItems.map((item) => (
+          <div
+            key={Math.random()}
+            className={
+              "flex flex-column justify-around " +
+              (item.warn === "expiring"
+                ? "bg-orange-300"
+                : item.warn === "expired"
+                ? "bg-red-300"
+                : "")
+            }
+          >
+            <p>{item.name}</p>
+            <p>{item.qty}</p>
+            <p>{item.expiry.split("T")[0]}</p>
+            <p>{item.ownerName}</p>
+            <p>{item.fridgeName}</p>
+            <button
+              onClick={() => {
+                setEditedItem(item);
+              }}
+              disabled={
+                item.owner !== loggedInUser.userId &&
+                loggedInUser.userId !== item.fridgeAdmin
+              }
+            >
+              {item.owner !== loggedInUser.userId &&
+              loggedInUser.userId !== item.fridgeAdmin
+                ? "✏️"
+                : "❌"}
+            </button>
+            <Button
+              variant="outlined"
+              color="error"
+              disabled={
+                item.owner !== loggedInUser.userId &&
+                loggedInUser.userId !== item.fridgeAdmin
+              }
+              onClick={() => {
+                setOpenDelete(true);
+                setDeleteItem(item._id);
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        ))} */
+}

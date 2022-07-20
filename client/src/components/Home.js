@@ -354,7 +354,12 @@ const Home = () => {
               inputRef={createFridgeMembersRef}
             />
             {/* input 1 item for now  */}
-            <CreateItem fields={fields} setFields={setFields}></CreateItem>
+            <CreateItem
+              fields={fields}
+              setFields={setFields}
+              mode="create"
+              isAdmin={true}
+            ></CreateItem>
 
             {/* <label htmlFor="name">Item Name:</label>
             <input id="name" ref={createNameRef}></input>

@@ -7,8 +7,8 @@ const FridgeSchema = new mongoose.Schema(
     adminEmail: { type: String, required: true },
     adminName: { type: String, required: true },
     members: [String],
-    memberEmails: [],
-    memberNames: [],
+    memberEmails: [{ type: String }],
+    memberNames: [{ type: String }],
     items: [
       {
         name: { type: String, required: true },
