@@ -14,6 +14,8 @@ const Registration = () => {
     height: "73vh",
     width: "40vw",
     margin: "0 auto",
+    backgroundColor: "transparent",
+    backdropFilter: "blur(26px)",
   };
   const btnstyle = { margin: "30px 0" };
   const headerStyle = { marginTop: "35px", marginBottom: "10px" };
@@ -36,9 +38,10 @@ const Registration = () => {
       );
       if (!res.ok) {
         // console.log(res.text());
-        const text = await res.text();
-        console.log(text);
-        throw new Error(text);
+        const err = await res.json();
+        console.log(err);
+        setError(err);
+        throw new Error(err.message);
       }
       const data = await res.json();
       console.log("registration: " + JSON.stringify(data));
@@ -83,10 +86,12 @@ const Registration = () => {
     <Grid>
       <Paper style={paperStyle}>
         <Grid align="center">
-          <h2 style={headerStyle}>Register</h2>
-          <Typography variant="caption" gutterBottom>
+          <p className="text-2xl mb-4 mt-2" style={headerStyle}>
+            Register
+          </p>
+          <p className="text-md mb-4 mt-2">
             Please fill this form to create an account!
-          </Typography>
+          </p>
         </Grid>
         <form>
           <TextField
@@ -114,6 +119,10 @@ const Registration = () => {
             inputRef={passwordRef}
             required
           />
+          {error &&
+            error.message.map((err) => (
+              <p className="text-red-600">{err.msg}</p>
+            ))}
           <Button
             type="submit"
             variant="contained"

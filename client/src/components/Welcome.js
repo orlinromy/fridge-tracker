@@ -12,7 +12,11 @@ const App = () => {
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
-  const paperStyle = { width: "40vw", margin: "50px auto" };
+  const paperStyle = {
+    width: "40vw",
+    margin: "100px auto",
+    backgroundColor: "transparent",
+  };
   function TabPanel(props) {
     const { children, value, index, ...other } = props;
     return (
@@ -32,7 +36,7 @@ const App = () => {
     );
   }
   return (
-    <Paper elevation={20} style={paperStyle}>
+    <Paper elevation={10} style={paperStyle}>
       <Tabs
         value={value}
         indicatorColor="primary"

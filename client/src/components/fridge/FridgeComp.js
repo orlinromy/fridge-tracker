@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Button } from "@mui/material";
+import { Button, Card, CardContent } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOffOutlinedIcon from "@mui/icons-material/EditOffOutlined";
 
@@ -23,13 +23,14 @@ const FridgeComp = (props) => {
     props.updateItem(updatedData);
   }
   return (
-    <div>
+    // <div className="">
+    <div className="mt-8 drop-shadow-xl h-[50vh] w-[40vw] overflow-y-scroll justify-center">
       <p className="text-2xl">
-        {props.type === "warn"
+        {props.type === "warn" || props.type === "view warn"
           ? "Expiring and Expired Items"
           : `Items in ${props.fridgeData.fridge.fridgeName}`}
       </p>
-      <div
+      {/* <div
         key={Math.random()}
         className="tableHeader flex flex-column justify-around"
       >
@@ -40,33 +41,37 @@ const FridgeComp = (props) => {
         <p>Fridge Name</p>
         {props.type === "normal" && (
           <>
-            <p className="text-slate-200">Button 1</p>
-            <p className="text-slate-200">Button 2</p>
+            <p>Button 1</p>
+            <p>Button 2</p>
           </>
         )}
-      </div>
+      </div> */}
       {props.itemList.map((item) => (
         <div
           key={Math.random()}
           className={
-            "flex flex-column justify-around " +
+            "rounded-md mb-4 " +
             (item.warn === "expiring"
               ? "bg-orange-300"
               : item.warn === "expired"
               ? "bg-red-300"
-              : "")
+              : "bg-white")
           }
         >
           {!props.editedItem || props.editedItem._id !== item._id ? (
-            <>
-              <p>{item.name}</p>
-              <p>{item.qty}</p>
-              <p>{item.expiry.split("T")[0]}</p>
-              <p>{item.ownerName}</p>
-              <p>{item.fridgeName}</p>
+            <div className="flex flex-row justify-between">
+              <div className="flex flex-col">
+                <p className="text-lg px-2 pt-2">{item.name}</p>
+                <p className="text-sm px-2">Quantity: {item.qty}</p>
+                <p className="text-sm px-2">
+                  Exp. Date: {item.expiry.split("T")[0]}
+                </p>
+                <p className="text-sm px-2">Owner: {item.ownerName}</p>
+                <p className="text-sm px-2 pb-2">Location: {item.fridgeName}</p>
+              </div>
               {props.type === "normal" && (
-                <>
-                  <button
+                <div className="flex flex-row">
+                  <Button
                     onClick={() => {
                       props.setEditedItem(item);
                     }}
@@ -74,14 +79,17 @@ const FridgeComp = (props) => {
                       item.owner !== props.loggedInUser.userId &&
                       props.loggedInUser.userId !== item.fridgeAdmin
                     }
+                    variant="contained"
+                    className="w-[90px]"
                   >
-                    {item.owner === props.loggedInUser.userId ||
+                    Edit
+                    {/* {item.owner === props.loggedInUser.userId ||
                     props.loggedInUser.userId === item.fridgeAdmin ? (
                       <EditIcon></EditIcon>
                     ) : (
                       <EditOffOutlinedIcon></EditOffOutlinedIcon>
-                    )}
-                  </button>
+                    )} */}
+                  </Button>
                   <Button
                     variant="contained"
                     color="error"
@@ -94,46 +102,91 @@ const FridgeComp = (props) => {
                       console.log(item._id);
                       props.setDeleteItem(item._id);
                     }}
+                    className="w-[90px]"
                   >
                     Delete
                   </Button>
-                </>
+                </div>
               )}
-            </>
+            </div>
           ) : (
-            <>
-              <input ref={nameRef} defaultValue={item.name}></input>
-              <input ref={qtyRef} type="number" defaultValue={item.qty}></input>
-              <input
-                ref={expiryRef}
-                type="date"
-                defaultValue={item.expiry.split("T")[0]}
-              ></input>
-              <select id="item-owner" ref={ownerRef}>
-                {item.fridgeMember.map((member, idx) => {
-                  return (
-                    <option value={member}>
-                      {props.fridgeData.fridge.memberNames[idx]}
+            <div className="flex flex-row">
+              <div className="flex flex-col justify-around">
+                <div className="flex flex-row">
+                  <label htmlFor="name" className="w-[200px]">
+                    Item Name
+                  </label>
+                  <input
+                    id="name"
+                    ref={nameRef}
+                    defaultValue={item.name}
+                  ></input>
+                </div>
+                <div className="flex flex-row">
+                  <label htmlFor="qty" className="w-[200px]">
+                    Quantity
+                  </label>
+                  <input
+                    id="qty"
+                    ref={qtyRef}
+                    type="number"
+                    defaultValue={item.qty}
+                  ></input>
+                </div>
+                <div className="flex flex-row">
+                  <label htmlFor="expiry" className="w-[200px]">
+                    Expiry Date
+                  </label>
+                  <input
+                    id="expiry"
+                    ref={expiryRef}
+                    type="date"
+                    defaultValue={item.expiry.split("T")[0]}
+                  ></input>
+                </div>
+                <div className="flex flex-row">
+                  <label htmlFor="item-owner" className="w-[200px]">
+                    Item Owner
+                  </label>
+                  <select id="item-owner" ref={ownerRef}>
+                    {item.fridgeMember.map((member, idx) => {
+                      return (
+                        <option value={member} selected={member === item.owner}>
+                          {props.fridgeData.fridge.memberNames[idx]}
+                        </option>
+                      );
+                    })}
+
+                    <option value={item.fridgeAdmin}>
+                      {props.fridgeData.fridge.adminName}
                     </option>
-                  );
-                })}
-                <option value={item.fridgeAdmin}>
-                  {props.fridgeData.fridge.adminName}
-                </option>
-              </select>
-              <p>{item.fridgeName}</p>
-              <button onClick={handleEditSubmit}>✅</button>
-              <button
-                onClick={() => {
-                  props.setEditedItem({});
-                }}
-              >
-                Cancel
-              </button>
-            </>
+                  </select>
+                </div>
+                <p>{item.fridgeName}</p>
+                <div className="flex flex-row">
+                  <Button onClick={handleEditSubmit} className="mx-2">
+                    Save
+                  </Button>
+                  <Button
+                    className="mx-2"
+                    onClick={() => {
+                      props.setEditedItem({});
+                      props.setEditItemError();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+              {props.editItemError &&
+                props.editItemError.message.map((err) => (
+                  <p className="text-red-600">{err.msg}</p>
+                ))}
+            </div>
           )}
         </div>
       ))}
+      {/* </div> */}
     </div>
   );
 };

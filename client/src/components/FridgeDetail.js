@@ -6,13 +6,13 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  TextField,
   DialogActions,
   Slide,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import CreateItem from "./addItem/CreateItem";
 import FridgeComp from "./fridge/FridgeComp";
+import PersistentDrawerLeft from "./NavBar";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -48,6 +48,8 @@ const FridgeDetail = () => {
   const [addMemberError, setAddMemberError] = useState();
   const [openDelete, setOpenDelete] = useState(false);
   const [deleteItem, setDeleteItem] = useState("");
+  const [addItemError, setAddItemError] = useState();
+  const [editItemError, setEditItemError] = useState();
 
   async function updateItem(updatedData) {
     try {
@@ -68,14 +70,20 @@ const FridgeDetail = () => {
       const res = await fetch("http://localhost:5001/api/users/item", options);
       console.log(res);
       if (res.ok) {
+        setEditItemError();
         setEditedItem({});
         getFridgeData(params.fridgeId);
       } else {
-        const text = await res.text();
-        throw Error(text);
+        const err = await res.json();
+        console.log(err);
+        setEditItemError(err);
+        throw Error(err);
       }
     } catch (err) {
       console.log(err);
+      if (err.message === "jwt expired") {
+        navigate("/welcome");
+      }
     }
   }
 
@@ -112,7 +120,10 @@ const FridgeDetail = () => {
         options
       );
       console.log(res);
-      if (!res.ok) throw Error();
+      if (!res.ok) {
+        const err = await res.json();
+        throw Error(err.message);
+      }
       const data = await res.json();
 
       data.fridge.items.forEach((item) => {
@@ -139,7 +150,10 @@ const FridgeDetail = () => {
       inputFormat.ownerEmail = loggedInUser.userEmail;
       setIsLoading(false);
     } catch (error) {
-      console.log(error);
+      console.log(error.message);
+      if (error.message === "jwt expired") {
+        navigate("/welcome");
+      }
     }
   }
 
@@ -148,6 +162,7 @@ const FridgeDetail = () => {
   }
 
   async function addNewItem(userInput) {
+    setAddItemError();
     try {
       const requestOptions = {
         method: "PUT",
@@ -169,6 +184,9 @@ const FridgeDetail = () => {
         setFields([{ ...inputFormat }]);
         getFridgeData(params.fridgeId);
       } else {
+        const error = await res.json();
+        console.log(error);
+        setAddItemError(error);
         throw Error();
       }
     } catch (error) {
@@ -177,7 +195,7 @@ const FridgeDetail = () => {
   }
 
   function handleCreateSubmit() {
-    const addedItems = [...fields];
+    const addedItems = JSON.parse(JSON.stringify(fields));
     console.log(addedItems);
     addedItems.forEach((item) => {
       if (typeof item.tag === "string") {
@@ -295,17 +313,28 @@ const FridgeDetail = () => {
   useEffect(() => {
     setItemList([]);
     setWarnItems([]);
+    setAddMemberError();
+    setAddItemError();
+    setEditItemError();
     setFields([{ ...inputFormat }]);
     getFridgeData(params.fridgeId);
   }, []);
 
   return (
     !isLoading && (
-      <>
+      <div className="mt-[100px] mx-[30px]">
+        <PersistentDrawerLeft></PersistentDrawerLeft>
+
+        <p className="text-xl">Admin: {fridgeData.fridge.adminName}</p>
+        <p className="text-lg">Members:</p>
+        {fridgeData.fridge.memberNames.map((member) => (
+          <p>{member}</p>
+        ))}
         <Button
           onClick={() => {
             setIsCreate(true);
           }}
+          variant="outlined"
         >
           Add New Item
         </Button>
@@ -314,16 +343,10 @@ const FridgeDetail = () => {
           onClick={() => {
             setAddMember(true);
           }}
+          variant="outlined"
         >
           Add Member
         </Button>
-        <p>{JSON.stringify(loggedInUser)}</p>
-        <p>{fridgeData.fridge.admin}</p>
-        <p className="text-2xl">Members</p>
-        <p className="text-lg">{fridgeData.fridge.adminName}</p>
-        {fridgeData.fridge.memberNames.map((member) => (
-          <p>{member}</p>
-        ))}
 
         <FridgeComp
           type="warn"
@@ -342,6 +365,8 @@ const FridgeDetail = () => {
           setDeleteItem={setDeleteItem}
           handleEditSubmit={handleEditSubmit}
           updateItem={updateItem}
+          editItemError={editItemError}
+          setEditItemError={setEditItemError}
         ></FridgeComp>
 
         <Dialog
@@ -350,6 +375,8 @@ const FridgeDetail = () => {
           keepMounted
           onClose={handleCreateClose}
           aria-describedby="alert-dialog-slide-description"
+          fullWidth
+          maxWidth="xl"
         >
           <DialogTitle>Add New Item</DialogTitle>
           <DialogContent>
@@ -361,6 +388,10 @@ const FridgeDetail = () => {
               isAdmin={loggedInUser.userId === fridgeData.fridge.admin}
               loggedInUser={loggedInUser}
             ></CreateItem>
+            {addItemError &&
+              addItemError.message.map((err) => (
+                <p className="text-red-600">{err.msg}</p>
+              ))}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCreateSubmit}>Submit</Button>
@@ -406,7 +437,7 @@ const FridgeDetail = () => {
             <Button onClick={handleDeleteClose}>No</Button>
           </DialogActions>
         </Dialog>
-      </>
+      </div>
     )
   );
 };

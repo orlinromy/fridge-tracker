@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
+import FridgeComp from "./fridge/FridgeComp";
 // import fridgeData from "../tempData/fridgeData";
 import AuthContext from "../context/AuthContext";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import CreateItem from "./addItem/CreateItem";
+import PersistentDrawerLeft from "./NavBar.js";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -19,6 +21,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 
 const Home = () => {
   const navigate = useNavigate();
+  const [fridgeData, setFridgeData] = useState([]);
   const [itemList, setItemList] = useState([]);
   const [warnItems, setWarnItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +43,7 @@ const Home = () => {
   const createOwnerRef = useRef();
   const createTagRef = useRef();
   const [fields, setFields] = useState([]);
+  const [createFridgeError, setCreateFridgeError] = useState();
 
   async function getItem() {
     setIsLoading(true);
@@ -66,7 +70,12 @@ const Home = () => {
       const data = await res.json();
       console.log(data);
 
-      for (const fridge of data.result) {
+      for (const fridge of data.fridge) {
+        authCtx.setFridges((prevState) => [
+          ...prevState,
+          { id: fridge._id, fridgeName: fridge.fridgeName },
+        ]);
+
         fridge.items.forEach((item) => {
           item.fridgeId = fridge._id;
           item.fridgeName = fridge.fridgeName;
@@ -74,21 +83,55 @@ const Home = () => {
           item.fridgeAdmin = fridge.admin;
           console.log(item);
         });
-        setItemList((prevState) => [...prevState, ...fridge.items]);
+        // setItemList((prevState) => [...prevState, [...fridge.items]]);
+        // setItemList((prevState) => [...prevState, ...fridge.items]);
+        const warnItemList = [];
+        const allItems = [];
         for (const item of fridge.items) {
-          console.log(new Date(Date.now()));
-          if (
-            // https://stackoverflow.com/questions/7751936/javascript-date-plus-2-weeks-14-days#:~:text=12096e5%20is%20a%20magic%20number,now()%20%2B%2012096e5)%3B
-            new Date(item.expiry) <= new Date(Date.now() + 12096e5)
-          ) {
-            setWarnItems((prevState) => [...prevState, item]);
+          if (new Date(item.expiry) <= new Date(Date.now() + 604800000)) {
+            if (new Date(Date.now()) <= new Date(new Date(item.expiry))) {
+              item.warn = "expiring";
+            } else {
+              item.warn = "expired";
+            }
+            warnItemList.push(JSON.parse(JSON.stringify(item)));
           }
+          allItems.push(JSON.parse(JSON.stringify(item)));
+          // setItemList((prevState) => {
+          //   const items = prevState[prevState.length - 1];
+          //   items.push(item);
+          //   return [...prevState, items];
+          // });
+          // setWarnItems((prevState) => [...prevState, []]);
+          // console.log(item);
+
+          // console.log(new Date(Date.now()));
+          // if (
+          //   // https://stackoverflow.com/questions/7751936/javascript-date-plus-2-weeks-14-days#:~:text=12096e5%20is%20a%20magic%20number,now()%20%2B%2012096e5)%3B
+          //   new Date(item.expiry) <= new Date(Date.now() + 12096e5)
+          // ) {
+          //   // setWarnItems((prevState) => {
+          //   //   const items = prevState[prevState.length - 1];
+          //   //   return [...prevState, [...items]];
+          //   // });
+          //   setWarnItems((prevState) => [...prevState, item]);
+          // }
         }
+        console.log("warn item list", warnItemList);
+        console.log("all items", allItems);
+        setItemList((prevState) => [
+          ...prevState,
+          JSON.parse(JSON.stringify(allItems)),
+        ]);
+        setWarnItems((prevState) => [
+          ...prevState,
+          JSON.parse(JSON.stringify(warnItemList)),
+        ]);
+        setFridgeData((prevState) => [...prevState, fridge]);
       }
       setLoggedInUser(data.userId);
     } catch (error) {
       console.log(error.message);
-
       navigate("/welcome");
     }
     setIsLoading(false);
@@ -151,11 +194,17 @@ const Home = () => {
         "http://localhost:5001/api/users/fridge",
         requestOptions
       );
-      if (!res.ok) throw Error();
-      const data = await res.json();
-      console.log(data);
-      const newFridgeId = data.data._id;
-      navigate(`/fridge/${newFridgeId}`);
+      if (!res.ok) {
+        const err = await res.json();
+        console.log(err);
+        setCreateFridgeError(err);
+        throw Error(err);
+      } else {
+        const data = await res.json();
+        console.log(data);
+        const newFridgeId = data.data._id;
+        navigate(`/fridge/${newFridgeId}`);
+      }
     } catch (error) {
       console.log(error);
     }
@@ -167,38 +216,28 @@ const Home = () => {
     const memberEmails = fridgeMembers
       .split(/,(\s)?/)
       .filter((data) => data !== " " && data !== undefined);
-    // const name = createNameRef.current.value;
-    // const qty = parseInt(createQuantityRef.current.value);
-    // const expiry = new Date(createExpiryRef.current.value);
-    // const buyDate = new Date(createBuyDateRef.current.value);
-    // const ownerEmail = createOwnerRef.current.value;
-    // const tags = createTagRef.current.value;
-    // const tag = tags
-    //   .split(/,(\s)?/)
-    //   .filter((data) => data !== " " && data !== undefined);
-    const addedItems = [...fields];
+    const addedItems = JSON.parse(JSON.stringify(fields)); // [...fields];
 
     addedItems.forEach((item) => {
-      const tags = item.tag
-        .split(/,(\s)?/)
-        .filter((data) => data !== " " && data !== undefined);
-      item.tag = tags;
+      if (typeof item.tag === "string") {
+        console.log("item.tag is string");
+        const tags = item.tag
+          .split(/,(\s)?/)
+          .filter((data) => data !== " " && data !== undefined);
+        item.tag = tags;
+      }
       const date = new Date(item.buyDate);
       item.buyDate = date;
       const expiryDate = new Date(item.expiry);
       item.expiry = expiryDate;
       const qty = parseInt(item.qty);
       item.qty = qty;
-    });
-    console.log({
-      fridgeName,
-      memberEmails,
-      items: fields,
+      console.log(addedItems);
     });
     const userInput = {
       fridgeName,
       memberEmails,
-      items: fields,
+      items: addedItems,
     };
     createNewFridge(userInput);
   }
@@ -214,126 +253,56 @@ const Home = () => {
 
   return (
     !isLoading && (
-      <>
+      <div className="mt-[100px] mb-[40px] mx-[20px]">
         <Button
           onClick={() => {
             setIsCreate(true);
           }}
+          variant="contained"
+          className="justify-center"
         >
           Create a New Fridge
         </Button>
-        <p className="text-2xl">Expiring and Low-in-Stock items</p>
-        <div
-          key={Math.random()}
-          className="tableHeader flex flex-column justify-around"
-        >
-          <p>Item Name</p>
-          <p>Quantity</p>
-          <p>Expiry Date</p>
-          <p>Owner</p>
-          <p>Fridge Name</p>
-          <p className="text-slate-200">Button 1</p>
-          <p className="text-slate-200">Button 2</p>
+        <div className="flex flex-row overflow-x-scroll">
+          {warnItems.map((item, idx) => {
+            return (
+              <div className="flex flex-col w-[50%]">
+                <FridgeComp
+                  type="view warn"
+                  fridgeData={{ fridge: fridgeData[idx] }}
+                  itemList={item}
+                  loggedInUser={loggedInUser}
+                ></FridgeComp>
+                <FridgeComp
+                  type="view normal"
+                  fridgeData={{ fridge: fridgeData[idx] }}
+                  itemList={itemList[idx]}
+                  loggedInUser={loggedInUser}
+                ></FridgeComp>
+              </div>
+            );
+          })}
+
+          {/* {itemList.map((item, idx) => {
+            return (
+              <FridgeComp
+                type="view normal"
+                fridgeData={{ fridge: fridgeData[idx] }}
+                itemList={item}
+                loggedInUser={loggedInUser}
+              ></FridgeComp>
+            );
+          })} */}
         </div>
-        {warnItems.map((item) => (
-          <div key={Math.random()} className="flex flex-column justify-around">
-            <p>{item.name}</p>
-            <p>{item.qty}</p>
-            <p>{item.expiry.split("T")[0]}</p>
-            <p>{item.owner}</p>
-            <a href={"/fridge/" + item.fridgeId}>
-              <p>{item.fridgeName}</p>
-            </a>
-            <button
-              onClick={() => {
-                setEditedItem(item);
-              }}
-              disabled={item.owner !== loggedInUser}
-            >
-              {item.owner === loggedInUser ? "✏️" : "❌"}
-            </button>
-            <Button variant="outlined" color="error">
-              Delete
-            </Button>
-          </div>
-        ))}
-        {/* start fridge module*/}
-        <p className="text-2xl">User: {loggedInUser}</p>
-        <div
-          key={Math.random()}
-          className="tableHeader flex flex-column justify-around"
-        >
-          <p>Item Name</p>
-          <p>Quantity</p>
-          <p>Expiry Date</p>
-          <p>Owner</p>
-          <p>Fridge Name</p>
-          <p className="text-slate-200">Button 1</p>
-          <p className="text-slate-200">Button 2</p>
-        </div>
-        {itemList.map((item) => (
-          <div key={Math.random()} className="flex flex-column justify-around">
-            {!editedItem || editedItem._id !== item._id ? (
-              <>
-                <p>{item.name}</p>
-                <p>{item.qty}</p>
-                <p>{item.expiry.split("T")[0]}</p>
-                <p>{item.owner}</p>
-                <a href={"/fridge/" + item.fridgeId}>
-                  <p>{item.fridgeName}</p>
-                </a>
-                <button
-                  onClick={() => {
-                    setEditedItem(item);
-                  }}
-                  disabled={
-                    item.owner !== loggedInUser &&
-                    loggedInUser !== item.fridgeAdmin
-                  }
-                >
-                  {item.owner === loggedInUser ||
-                  loggedInUser === item.fridgeAdmin
-                    ? "✏️"
-                    : "❌"}
-                </button>
-                <Button variant="outlined" color="error">
-                  Delete
-                </Button>
-              </>
-            ) : (
-              <>
-                <input ref={nameRef} defaultValue={item.name}></input>
-                <input
-                  ref={qtyRef}
-                  type="number"
-                  defaultValue={item.qty}
-                ></input>
-                <input
-                  ref={expiryRef}
-                  type="date"
-                  defaultValue={item.expiry.split("T")[0]}
-                ></input>
-                <select id="item-owner" ref={ownerRef}>
-                  {item.fridgeMember.map((member) => {
-                    return <option value={member}>{member}</option>;
-                  })}
-                  <option value={item.fridgeAdmin}>{item.fridgeAdmin}</option>
-                </select>
-                <p>{item.fridgeName}</p>
-                <button onClick={handleEditSubmit}>✅</button>
-                <Button variant="outlined" color="error">
-                  Delete
-                </Button>
-              </>
-            )}
-          </div>
-        ))}
+        {/* </div> */}
         <Dialog
           open={isCreate}
           TransitionComponent={Transition}
           keepMounted
           onClose={handleCreateClose}
           aria-describedby="alert-dialog-slide-description"
+          fullWidth
+          maxWidth="lg"
         >
           <DialogTitle>Create New Fridge</DialogTitle>
           <DialogContent>
@@ -345,7 +314,7 @@ const Home = () => {
               margin="normal"
               inputRef={createFridgeNameRef}
             />
-            {/* use text input for now */}
+
             <TextField
               id="member"
               label="Members"
@@ -353,47 +322,23 @@ const Home = () => {
               margin="normal"
               inputRef={createFridgeMembersRef}
             />
-            {/* input 1 item for now  */}
+
             <CreateItem
               fields={fields}
               setFields={setFields}
               mode="create"
               isAdmin={true}
             ></CreateItem>
-
-            {/* <label htmlFor="name">Item Name:</label>
-            <input id="name" ref={createNameRef}></input>
-            <br />
-            <label htmlFor="quantity">Quantity:</label>
-            <input id="quantity" type="number" ref={createQuantityRef}></input>
-            <br />
-            <label htmlFor="expirydate">Expiry Date:</label>
-            <input id="expirydate" type="date" ref={createExpiryRef}></input>
-            <br />
-            <label htmlFor="buydate">Buy Date:</label>
-            <input id="buydate" type="date" ref={createBuyDateRef}></input>
-            <br />
-            <label htmlFor="owner">Owner:</label>
-            <input id="owner" ref={createOwnerRef}></input>
-            <br />
-            <label htmlFor="tag">Tag:</label>
-            <input id="tag" ref={createTagRef}></input>
-            <br /> */}
-            {/* {error && (
-              <ul>
-                {error.map((err) => (
-                  <li key={Math.random()} style={{ color: "red" }}>
-                    {err.msg}
-                  </li>
-                ))}
-              </ul>
-            )} */}
+            {createFridgeError &&
+              createFridgeError.message.map((err) => (
+                <p className="text-red-600">{err.msg}</p>
+              ))}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCreateSubmit}>Submit</Button>
           </DialogActions>
         </Dialog>
-      </>
+      </div>
     )
   );
 };

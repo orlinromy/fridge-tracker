@@ -19,6 +19,7 @@ const { json } = require("express");
 router.put(
   "/register",
   [
+    check("name", "name cannot be empty").notEmpty(),
     check("email", "email cannot be empty").notEmpty(),
     check("email", "invalid email").isEmail(),
     check("password", "password cannot be empty").notEmpty(),
@@ -26,7 +27,6 @@ router.put(
     check("password", "password length is less than 12 characters").custom(
       (value, { req }) => req.body.password.length >= 12
     ),
-    check("name", "name cannot be empty").notEmpty(),
   ],
   async (req, res) => {
     try {
@@ -38,7 +38,9 @@ router.put(
 
       const user = await User.findOne({ email: req.body.email });
       if (user) {
-        return res.status(400).json({ error: 400, message: "duplicate email" });
+        return res
+          .status(400)
+          .json({ error: 400, message: [{ msg: "user already exists" }] });
       }
 
       const hash = await bcrypt.hash(req.body.password, 12);
@@ -49,9 +51,13 @@ router.put(
         name: req.body.name,
       });
       console.log("created user: email: ", createdUser.email, createdUser._id);
-      res.status(200).json({ status: 200, message: "successfully added" });
+      res
+        .status(200)
+        .json({ status: 200, message: [{ msg: "successfully added" }] });
     } catch (error) {
-      res.status(400).json({ status: "error 400", message: error.message });
+      res
+        .status(400)
+        .json({ status: "error 400", message: [{ msg: error.message }] });
     }
   }
 );
@@ -80,7 +86,7 @@ router.post(
       if (!user) {
         return res
           .status(400)
-          .json({ status: 400, message: "user is not found" });
+          .json({ status: 400, message: [{ msg: "user is not found" }] });
       }
 
       const result = await bcrypt.compare(req.body.password, user.hash);
@@ -88,13 +94,13 @@ router.post(
       if (!result) {
         return res
           .status(401)
-          .json({ status: 401, message: "email or password error" });
+          .json({ status: 401, message: [{ msg: "email or password error" }] });
       }
 
       const payload = {
         id: user._id,
         email: user.email,
-        name: user.nme,
+        name: user.name,
         // admin: user.admin,
       };
 
@@ -111,7 +117,7 @@ router.post(
 
       res.status(200).json(response);
     } catch (error) {
-      res.status(400).json({ error: 400, message: error.message });
+      res.status(400).json({ error: 400, message: [{ msg: error.message }] });
     }
   }
 );
@@ -127,13 +133,13 @@ router.post("/fridges", auth, async (req, res) => {
         {
           _id: { $in: fridgeIds },
         },
-        (err, result) => {
+        (err, fridge) => {
           if (err) throw Error(err);
           res.status(200).json({
             userId: req.decoded.id,
             userEmail: req.decoded.email,
             userName: req.decoded.name,
-            result,
+            fridge,
           });
         }
       );
@@ -158,7 +164,9 @@ router.put(
     check("items", "items are not in an array").optional().isArray(),
     check("items.*.name", "item name cannot be empty").optional().notEmpty(),
     check("items.*.qty", "quantity is not in numeric").isNumeric(),
-    check("items.*.tag", "tag is not in an array").optional().isArray(),
+    check("items.*.tag", "tag is not in the correct format")
+      .optional()
+      .isArray(),
     check("items.*.buyDate", "buyDate is not in an array")
       .optional()
       .isISO8601(),
@@ -262,7 +270,7 @@ router.patch(
         if (!validUsers) {
           return res
             .status(400)
-            .json({ error: 400, message: "user cannot be found" });
+            .json({ error: 400, message: ["user cannot be found"] });
         }
         console.log(validUsers);
 
@@ -276,7 +284,7 @@ router.patch(
               console.log("user is already added");
               return res.status(400).json({
                 error: 400,
-                message: "this user is already added to the fridge",
+                message: ["this user is already added to the fridge"],
               });
             } else {
               user.fridgeId = [...user.fridgeId, req.body.fridgeId];
@@ -321,7 +329,7 @@ router.patch(
               console.log("user is already added");
               return res.status(400).json({
                 error: 400,
-                message: "this user is already added to the fridge",
+                message: ["this user is already added to the fridge"],
               });
             } else {
               fridge.members = [...fridge.members, validUsers._id];
@@ -370,11 +378,13 @@ router.patch(
         // });
         res.status(200).json({ message: "member has been successfully added" });
       } else {
-        return res.status(403).json({ status: 403, message: "not authorized" });
+        return res
+          .status(403)
+          .json({ status: 403, message: ["not authorized"] });
       }
     } catch (error) {
       console.log(error);
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: [error.message] });
     }
   }
 );
@@ -492,9 +502,10 @@ router.patch("/item", fridgeAuth, async (req, res) => {
             item.ownerEmail = ownerEmail || item.ownerEmail;
             isFound = true;
           } else {
-            return res
-              .status(403)
-              .json({ error: 403, message: "user is not authorized" });
+            return res.status(403).json({
+              error: 403,
+              message: [{ msg: "user is not authorized" }],
+            });
           }
         }
       }
@@ -503,9 +514,11 @@ router.patch("/item", fridgeAuth, async (req, res) => {
     }
     isFound
       ? res.status(200).json(fridgeItems)
-      : res.status(400).json({ error: 400, message: "item not found" });
+      : res
+          .status(400)
+          .json({ error: 400, message: [{ msg: "item not found" }] });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: [{ msg: error.message }] });
   }
 });
 
