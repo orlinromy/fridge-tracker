@@ -7,13 +7,13 @@ const Login = () => {
   const emailRef = useRef();
   const passwordRef = useRef();
   const [error, setError] = useState();
-  // const [tokens, setTokens] = useState({});
   const authCtx = useContext(AuthContext);
   const paperStyle = {
     padding: 30,
     height: "73vh",
     width: "40vw",
     margin: "0 auto",
+    backgroundColor: "transparent",
   };
   const btnstyle = { margin: "45px 0" };
   const fieldstyle = {
@@ -30,14 +30,18 @@ const Login = () => {
     };
     try {
       const res = await fetch("http://localhost:5001/api/users/login", options);
+      if (!res.ok) {
+        const error = await res.json();
+        setError(error);
+        throw Error(error.message);
+      }
       const data = await res.json();
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
       authCtx.setCredentials(data);
       navigate("/");
     } catch (error) {
-      console.log(error.message);
-      setError(error);
+      console.log(error);
     }
   };
   const handleUserLogin = (e) => {
@@ -51,12 +55,17 @@ const Login = () => {
   };
   return (
     <Grid>
-      <Paper style={paperStyle}>
+      <Paper style={paperStyle} className="bg-red-100">
         <Grid align="center">
-          <h2 style={{ marginBottom: "2px", marginTop: "55px" }}>Log In</h2>
-          <Typography variant="caption" gutterBottom>
+          <p
+            className="text-2xl mb-4 mt-2"
+            style={{ marginBottom: "2px", marginTop: "55px" }}
+          >
+            Log In
+          </p>
+          <p className="text-md mb-4 mt-2">
             Please log in to view your fridges!
-          </Typography>
+          </p>
         </Grid>
         <TextField
           label="Login Email"
@@ -73,6 +82,8 @@ const Login = () => {
           inputRef={passwordRef}
           fullWidth
         />
+        {error &&
+          error.message.map((err) => <p className="text-red-600">{err.msg}</p>)}
         <Button
           type="submit"
           color="primary"

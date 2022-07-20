@@ -8,12 +8,17 @@ import CreateItem from "./components/addItem/CreateItem";
 import FridgeDetail from "./components/FridgeDetail";
 import AuthContext from "./context/AuthContext";
 import Welcome from "./components/Welcome";
+import PersistentDrawerLeft from "./components/NavBar";
 
 function App() {
   const [credentials, setCredentials] = useState();
+  const [fridges, setFridges] = useState([]);
   return (
-    <AuthContext.Provider value={{ credentials, setCredentials }}>
-      <div className="App bg-slate-200">
+    <AuthContext.Provider
+      value={{ credentials, setCredentials, fridges, setFridges }}
+    >
+      <div className="App">
+        <PersistentDrawerLeft fridges={fridges}></PersistentDrawerLeft>
         <Routes>
           <Route path="/" element={<Home></Home>}></Route>
           {/* <Route
