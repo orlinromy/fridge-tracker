@@ -4,7 +4,11 @@ const FridgeSchema = new mongoose.Schema(
   {
     fridgeName: { type: String, required: true },
     admin: { type: String, required: true },
+    adminEmail: { type: String, required: true },
+    adminName: { type: String, required: true },
     members: [String],
+    memberEmails: [{ type: String }],
+    memberNames: [{ type: String }],
     items: [
       {
         name: { type: String, required: true },
@@ -15,6 +19,8 @@ const FridgeSchema = new mongoose.Schema(
           default: () => Date.now() + 14 * 24 * 60 * 60 * 1000,
         },
         owner: { type: String, required: true },
+        ownerEmail: { type: String, required: true },
+        ownerName: { type: String, required: true },
         tag: [String],
         buyDate: { type: Date, default: Date.now() },
         createDate: { type: Date, default: Date.now() },

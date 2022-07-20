@@ -11,6 +11,7 @@ import {
   Slide,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import CreateItem from "./addItem/CreateItem";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -38,6 +39,7 @@ const Home = () => {
   const createBuyDateRef = useRef();
   const createOwnerRef = useRef();
   const createTagRef = useRef();
+  const [fields, setFields] = useState([]);
 
   async function getItem() {
     setIsLoading(true);
@@ -87,7 +89,7 @@ const Home = () => {
     } catch (error) {
       console.log(error.message);
 
-      navigate("/login");
+      navigate("/welcome");
     }
     setIsLoading(false);
   }
@@ -164,26 +166,39 @@ const Home = () => {
     const fridgeMembers = createFridgeMembersRef.current.value;
     const memberEmails = fridgeMembers
       .split(/,(\s)?/)
-      .filter((data) => data !== " " && data != undefined);
-    const name = createNameRef.current.value;
-    const qty = parseInt(createQuantityRef.current.value);
-    const expiry = new Date(createExpiryRef.current.value);
-    const buyDate = new Date(createBuyDateRef.current.value);
-    const ownerEmail = createOwnerRef.current.value;
-    const tags = createTagRef.current.value;
-    const tag = tags
-      .split(/,(\s)?/)
-      .filter((data) => data !== " " && data != undefined);
+      .filter((data) => data !== " " && data !== undefined);
+    // const name = createNameRef.current.value;
+    // const qty = parseInt(createQuantityRef.current.value);
+    // const expiry = new Date(createExpiryRef.current.value);
+    // const buyDate = new Date(createBuyDateRef.current.value);
+    // const ownerEmail = createOwnerRef.current.value;
+    // const tags = createTagRef.current.value;
+    // const tag = tags
+    //   .split(/,(\s)?/)
+    //   .filter((data) => data !== " " && data !== undefined);
+    const addedItems = [...fields];
 
+    addedItems.forEach((item) => {
+      const tags = item.tag
+        .split(/,(\s)?/)
+        .filter((data) => data !== " " && data !== undefined);
+      item.tag = tags;
+      const date = new Date(item.buyDate);
+      item.buyDate = date;
+      const expiryDate = new Date(item.expiry);
+      item.expiry = expiryDate;
+      const qty = parseInt(item.qty);
+      item.qty = qty;
+    });
     console.log({
       fridgeName,
       memberEmails,
-      items: [{ name, qty, ownerEmail, tag, expiry, buyDate }],
+      items: fields,
     });
     const userInput = {
       fridgeName,
       memberEmails,
-      items: [{ name, qty, ownerEmail, tag, expiry, buyDate }],
+      items: fields,
     };
     createNewFridge(userInput);
   }
@@ -226,7 +241,9 @@ const Home = () => {
             <p>{item.qty}</p>
             <p>{item.expiry.split("T")[0]}</p>
             <p>{item.owner}</p>
-            <p>{item.fridgeName}</p>
+            <a href={"/fridge/" + item.fridgeId}>
+              <p>{item.fridgeName}</p>
+            </a>
             <button
               onClick={() => {
                 setEditedItem(item);
@@ -262,7 +279,9 @@ const Home = () => {
                 <p>{item.qty}</p>
                 <p>{item.expiry.split("T")[0]}</p>
                 <p>{item.owner}</p>
-                <p>{item.fridgeName}</p>
+                <a href={"/fridge/" + item.fridgeId}>
+                  <p>{item.fridgeName}</p>
+                </a>
                 <button
                   onClick={() => {
                     setEditedItem(item);
@@ -335,8 +354,14 @@ const Home = () => {
               inputRef={createFridgeMembersRef}
             />
             {/* input 1 item for now  */}
+            <CreateItem
+              fields={fields}
+              setFields={setFields}
+              mode="create"
+              isAdmin={true}
+            ></CreateItem>
 
-            <label htmlFor="name">Item Name:</label>
+            {/* <label htmlFor="name">Item Name:</label>
             <input id="name" ref={createNameRef}></input>
             <br />
             <label htmlFor="quantity">Quantity:</label>
@@ -353,7 +378,7 @@ const Home = () => {
             <br />
             <label htmlFor="tag">Tag:</label>
             <input id="tag" ref={createTagRef}></input>
-            <br />
+            <br /> */}
             {/* {error && (
               <ul>
                 {error.map((err) => (

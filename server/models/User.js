@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     hash: { type: String, required: true },
     fridgeId: [String],
-    name: String,
+    name: { type: String, required: true },
   },
 
   { timestamps: true },

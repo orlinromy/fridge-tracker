@@ -1,30 +1,42 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 // source: https://codesandbox.io/s/q555kp8jj?fontsize=14&file=/src/index.js
-const CreateItem = () => {
-  const inputFormat = {
-    name: null,
-    quantity: null,
-    expiry: new Date(Date.now()).toISOString().split("T")[0],
-    ownerEmail: null,
-    tag: null,
-    buyDate: new Date(Date.now()).toISOString().split("T")[0],
-  };
-  const [fields, setFields] = useState([{ ...inputFormat }]);
+const CreateItem = (props) => {
+  // console.log(props.data);
+  // const inputFormat = {
+  //   name: null,
+  //   qty: null,
+  //   expiry: null,
+  //   ownerEmail: null,
+  //   tag: null,
+  //   buyDate: null,
+  // };
+
+  // const [fields, setFields] = useState([{ ...inputFormat }]);
+  // console.log(props.fields);
+  console.log(props);
 
   function handleAddField() {
-    const values = [...fields];
-    values.push(inputFormat);
-    setFields(values);
+    const values = [...props.fields];
+    values.push({ ...props.inputFormat });
+    props.setFields(values);
   }
   function handleChange(idx, e) {
-    setFields((prevState) => {
+    props.setFields((prevState) => {
       if (e.target.id === "expiry" || e.target.id === "buyDate") {
-        prevState[idx][e.target.id] = new Date(e.target.value);
+        prevState[idx][e.target.id] = new Date(e.target.value)
+          .toISOString()
+          .split("T")[0];
+      } else {
+        prevState[idx][e.target.id] = e.target.value;
       }
-      prevState[idx][e.target.id] = e.target.value;
       return prevState;
     });
+  }
+  function handleRemove(idx, e) {
+    const values = [...props.fields];
+    values.splice(idx, 1);
+    props.setFields(values);
   }
 
   return (
@@ -32,11 +44,10 @@ const CreateItem = () => {
       <button className="border border-solid" onClick={handleAddField}>
         Add field
       </button>
-      {fields.map((field, idx) => {
+      {props.fields.map((field, idx) => {
         return (
           <div key={Math.random()}>
             <input
-              key={"name" + idx}
               id="name"
               type="text"
               placeholder="Enter Item Name"
@@ -46,17 +57,15 @@ const CreateItem = () => {
               }}
             ></input>
             <input
-              key={"quantity" + idx}
-              id="quantity"
-              type="number"
+              id="qty"
+              type="text"
               placeholder="Enter Item Quantity"
-              value={field.quantity}
+              value={field.qty}
               onChange={(e) => {
                 handleChange(idx, e);
               }}
             ></input>
             <input
-              key={"expiry" + idx}
               id="expiry"
               type="date"
               value={field.expiry}
@@ -64,18 +73,39 @@ const CreateItem = () => {
                 handleChange(idx, e);
               }}
             ></input>
+            {props.isAdmin && props.mode !== "create" && (
+              <select
+                id="ownerEmail"
+                onChange={(e) => {
+                  handleChange(idx, e);
+                }}
+                value={field.ownerEmail}
+              >
+                <option value={props.data.adminEmail}>
+                  {props.data.adminName + " (" + props.data.adminEmail + ")"}
+                </option>
+                {props.data.memberEmails.length !== 0 &&
+                  props.data.memberEmails.map((memberEmail, idx) => {
+                    return (
+                      <option value={memberEmail}>
+                        {props.data.memberNames[idx] + " (" + memberEmail + ")"}
+                      </option>
+                    );
+                  })}
+              </select>
+            )}
+            {props.mode == "create" && (
+              <input
+                id="ownerEmail"
+                type="email"
+                placeholder="Enter owner's email"
+                value={field.ownerEmail}
+                onChange={(e) => {
+                  handleChange(idx, e);
+                }}
+              ></input>
+            )}
             <input
-              key={"ownerEmail" + idx}
-              id="ownerEmail"
-              type="email"
-              placeholder="Enter owner's email"
-              value={field.ownerEmail}
-              onChange={(e) => {
-                handleChange(idx, e);
-              }}
-            ></input>
-            <input
-              key={"tag" + idx}
               id="tag"
               type="tag"
               placeholder="Tags (separated by comma)"
@@ -85,7 +115,6 @@ const CreateItem = () => {
               }}
             ></input>
             <input
-              key={"buyDate" + idx}
               id="buyDate"
               type="date"
               value={field.buyDate}
@@ -93,7 +122,14 @@ const CreateItem = () => {
                 handleChange(idx, e);
               }}
             ></input>
-            <button type="button"></button>
+            <button
+              type="button"
+              onClick={(e) => {
+                handleRemove(idx, e);
+              }}
+            >
+              Remove
+            </button>
           </div>
         );
       })}
