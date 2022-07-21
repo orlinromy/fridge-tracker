@@ -253,7 +253,7 @@ const Home = () => {
 
   return (
     !isLoading && (
-      <div className="mt-[100px] mb-[40px] mx-[20px]">
+      <div className="mt-[80px] mb-[40px] mx-[20px] bg-transparent">
         <Button
           onClick={() => {
             setIsCreate(true);

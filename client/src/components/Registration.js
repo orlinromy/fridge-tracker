@@ -14,7 +14,7 @@ const Registration = () => {
     height: "73vh",
     width: "40vw",
     margin: "0 auto",
-    backgroundColor: "transparent",
+    backgroundColor: "white",
     backdropFilter: "blur(26px)",
   };
   const btnstyle = { margin: "30px 0" };
