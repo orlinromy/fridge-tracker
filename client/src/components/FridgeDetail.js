@@ -322,9 +322,7 @@ const FridgeDetail = () => {
 
   return (
     !isLoading && (
-      <div className="mt-[100px] mx-[30px]">
-        <PersistentDrawerLeft></PersistentDrawerLeft>
-
+      <div className="mt-[80px] mx-[30px]">
         <p className="text-xl">Admin: {fridgeData.fridge.adminName}</p>
         <p className="text-lg">Members:</p>
         {fridgeData.fridge.memberNames.map((member) => (
@@ -347,27 +345,28 @@ const FridgeDetail = () => {
         >
           Add Member
         </Button>
-
-        <FridgeComp
-          type="warn"
-          fridgeData={fridgeData}
-          itemList={warnItems}
-          loggedInUser={loggedInUser}
-        ></FridgeComp>
-        <FridgeComp
-          type="normal"
-          fridgeData={fridgeData}
-          itemList={itemList}
-          editedItem={editedItem}
-          setEditedItem={setEditedItem}
-          loggedInUser={loggedInUser}
-          setOpenDelete={setOpenDelete}
-          setDeleteItem={setDeleteItem}
-          handleEditSubmit={handleEditSubmit}
-          updateItem={updateItem}
-          editItemError={editItemError}
-          setEditItemError={setEditItemError}
-        ></FridgeComp>
+        <div className="flex flex-row justify-around">
+          <FridgeComp
+            type="warn"
+            fridgeData={fridgeData}
+            itemList={warnItems}
+            loggedInUser={loggedInUser}
+          ></FridgeComp>
+          <FridgeComp
+            type="normal"
+            fridgeData={fridgeData}
+            itemList={itemList}
+            editedItem={editedItem}
+            setEditedItem={setEditedItem}
+            loggedInUser={loggedInUser}
+            setOpenDelete={setOpenDelete}
+            setDeleteItem={setDeleteItem}
+            handleEditSubmit={handleEditSubmit}
+            updateItem={updateItem}
+            editItemError={editItemError}
+            setEditItemError={setEditItemError}
+          ></FridgeComp>
+        </div>
 
         <Dialog
           open={isCreate}

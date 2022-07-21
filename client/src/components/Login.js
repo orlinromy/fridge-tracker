@@ -13,7 +13,7 @@ const Login = () => {
     height: "73vh",
     width: "40vw",
     margin: "0 auto",
-    backgroundColor: "transparent",
+    // backgroundColor: "white",
   };
   const btnstyle = { margin: "45px 0" };
   const fieldstyle = {

@@ -15,7 +15,7 @@ const App = () => {
   const paperStyle = {
     width: "40vw",
     margin: "100px auto",
-    backgroundColor: "transparent",
+    // backgroundColor: "transparent",
   };
   function TabPanel(props) {
     const { children, value, index, ...other } = props;

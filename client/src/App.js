@@ -17,7 +17,7 @@ function App() {
     <AuthContext.Provider
       value={{ credentials, setCredentials, fridges, setFridges }}
     >
-      <div className="App">
+      <div className="App bg-slate-200">
         <PersistentDrawerLeft fridges={fridges}></PersistentDrawerLeft>
         <Routes>
           <Route path="/" element={<Home></Home>}></Route>

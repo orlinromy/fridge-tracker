@@ -24,7 +24,13 @@ const FridgeComp = (props) => {
   }
   return (
     // <div className="">
-    <div className="mt-8 drop-shadow-xl h-[50vh] w-[40vw] overflow-y-scroll justify-center">
+    <div
+      className={
+        props.type === "warn" || props.type === "normal"
+          ? "mt-8 drop-shadow-xl h-[70vh] w-[40vw] overflow-y-scroll justify-center"
+          : "mt-8 drop-shadow-xl h-[50vh] w-[40vw] overflow-y-scroll justify-center"
+      }
+    >
       <p className="text-2xl">
         {props.type === "warn" || props.type === "view warn"
           ? "Expiring and Expired Items"
