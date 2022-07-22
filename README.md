@@ -1,6 +1,6 @@
 # Fridge Tracker
 
-Fridge tracker helps you track your fridge and alert if you have items nearing expiring or has expired.
+Fridge tracker helps you track your fridge and alert if you have items nearing expiry date or has expired.
 
 Some screenshot
 ![Welcome page](readme_files/welcome.png)
@@ -42,9 +42,9 @@ Back-end:
 
 We tried to complete the back-end first then complete the front-end, but back-end took quite a long time to finish as there are a lot of things to update. We decided to connect whatever endpoint available fron the back-end to the front-end.
 
-For back-end, we did a lot of `.find()` and `.save()` functions a lot when we make data changes in the database
+For back-end, we did a lot of `.find()` and `.save()` functions a lot when we make data changes in the database.
 
-For front-end, since a lot of components are repeated, we are able to make a reusable components, such as
+For front-end, since a lot of components are repeated, we are able to make a reusable components, such as `FridgeComp` which renders the fridge item data and `CreateItem` which generate a new field to enable user to add multiple items at once.
 
 ## Installation
 
@@ -102,18 +102,21 @@ The initial wireframes change so much during the course of the project as we rea
 ### Major Hurdles
 
 1. Updating both Fridge model and User model
+
    We designed the model such that when a user created a fridge or is added to a fridge, the fridgeId array in the User model need to be updated to keep track of the fridgeId that they have. What we implemented at the end is to tap into both models when we call the create fridge and add member to fridge endpoint, which resulted in long code.
 
 2. Not using Mongoose's full ability
+
    A lot of times we decided to do `User.find()` or `Fridge.find()` then call `.save()` method when we want to update or delete something. We could have just used mongoose's function (e.g. `arrayFilter` or `ref`)
 
 3. Design has to be detailed
+
    Quite self-explanatory. Planning and design is very important for a software project as a lot of things can go wrong.
 
 4. Fetch API works differently from axios
    Not to say that Fetch API is better or axios is better - this is strictly for learning purposes.
 
-When the backend throw a status 4XX or 5XX, axios would treat that as an error, while Fetch API treat that as a promise rejected (not an error). So if we use axios, the error can be caught in the try-catch section, while in Fetch API, we'll need to check whether the `res.ok` returns true or false - if it's false, we need to throw an error so that it can be caught in the try-catch section.
+   When the backend throw a status 4XX or 5XX, axios would treat that as an error, while Fetch API treat that as a promise rejected (not an error). So if we use axios, the error can be caught in the try-catch section, while in Fetch API, we'll need to check whether the `res.ok` returns true or false - if it's false, we need to throw an error so that it can be caught in the try-catch section.
 
 ### Unsolved Problems
 
