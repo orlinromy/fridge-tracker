@@ -93,11 +93,11 @@ The initial wireframes change so much during the course of the project as we rea
 
 #### Fridge Model
 
-!(fridge-model)[fridge-model.png]
+![fridge-model](fridge-model.png)
 
 #### User Model
 
-!(user-model)[user-model.png]
+![user-model](user-model.png)
 
 ### Major Hurdles
 
