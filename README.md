@@ -1,6 +1,6 @@
 # Fridge Tracker
 
-Fridge tracker helps you track your fridge and alert if you have items nearing expiring or has expired.
+Fridge tracker helps you track your fridge and alert if you have items nearing expiry date or has expired.
 
 Some screenshot
 ![Welcome page](readme_files/welcome.png)
