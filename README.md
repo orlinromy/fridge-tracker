@@ -3,10 +3,10 @@
 Fridge tracker helps you track your fridge and alert if you have items nearing expiring or has expired.
 
 Some screenshot
-![Welcome page](welcome.png)
-![Create New Fridge](create-new-fridge.png)
-![Fridges](fridges.png)
-![Individual Fridge](individual-fridge.png)
+![Welcome page](readme_files/welcome.png)
+![Create New Fridge](readme_files/create-new-fridge.png)
+![Fridges](readme_files/fridges.png)
+![Individual Fridge](readme_files/individual-fridge.png)
 
 ## User Stories
 
@@ -76,16 +76,16 @@ npm i
 
 ### Backend Design
 
-![backend](backend-design.png)
+![backend](readme_files/backend-design.png)
 
 ### Wireframes
 
 Initial wireframes:
-![wireframe 1](wireframe01.jpg)
-![wireframe 2](wireframe02.PNG)
-![wireframe 3](wireframe03.jpg)
-![wireframe 4](wireframe04.PNG)
-![wireframe 5](wireframe05.jpg)
+![wireframe 1](readme_files/wireframe01.jpg)
+![wireframe 2](readme_files/wireframe02.PNG)
+![wireframe 3](readme_files/wireframe03.jpg)
+![wireframe 4](readme_files/wireframe04.PNG)
+![wireframe 5](readme_files/wireframe05.jpg)
 
 The initial wireframes change so much during the course of the project as we realized that some screens are not covered, such as the individual fridge screen where user can click on one of the fridges in the homepage to see their items in detail. Initially, we wanted to implement the checker and submitter model, where a user would input the item in the fridge and the other user would check whether the items in the fridge are added correctly. However, we changed this model to admin - member model because we feel that this would be more useful for people who are in communal living.
 
@@ -93,11 +93,11 @@ The initial wireframes change so much during the course of the project as we rea
 
 #### Fridge Model
 
-!(fridge-model)[fridge-model.png]
+![fridge-model](readme_files/fridge-model.png)
 
 #### User Model
 
-!(user-model)[user-model.png]
+![user-model](readme_files/user-model.png)
 
 ### Major Hurdles
 
